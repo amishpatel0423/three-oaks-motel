@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Three Oaks Motel – Titusville, FL</title>
+  <meta name="description" content="Welcome to Three Oaks Motel in Titusville, FL. Enjoy comfortable rooms, free WiFi, complimentary coffee, and 24-hour front desk service. Book your stay today!" />
+  <meta name="keywords" content="Three Oaks Motel, Titusville Florida hotel, motel Titusville FL, affordable hotel Florida" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       TOP INFO BAR
+  ═══════════════════════════════════════════ -->
+  <div class="topbar" id="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-left">
+        <span><i class="fas fa-location-dot"></i> 707 S. Hopkins Ave, Titusville, FL 32780</span>
+        <span><i class="fas fa-clock"></i> Check-in: 2:00 PM &nbsp;|&nbsp; Check-out: 11:00 AM</span>
+      </div>
+      <div class="topbar-right">
+        <span><i class="fas fa-envelope"></i> threeoaksmotel@gmail.com</span>
+        <a href="https://facebook.com" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       NAVIGATION
+  ═══════════════════════════════════════════ -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a href="#home" class="nav-logo" id="nav-logo-link">
+        <div class="logo-icon"><i class="fas fa-tree"></i></div>
+        <div class="logo-text">
+          <span class="logo-name">Three Oaks</span>
+          <span class="logo-sub">MOTEL</span>
+        </div>
+      </a>
+
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#home" class="nav-link">Home</a></li>
+        <li><a href="#about" class="nav-link">About</a></li>
+        <li><a href="#rooms" class="nav-link">Rooms</a></li>
+        <li><a href="#amenities" class="nav-link">Amenities</a></li>
+        <li><a href="#gallery" class="nav-link">Gallery</a></li>
+        <li><a href="#contact" class="nav-link">Contact</a></li>
+      </ul>
+
+      <div class="nav-cta">
+        <a href="tel:+13212676272" class="nav-phone">
+          <i class="fas fa-phone"></i>
+          <span>(321) 267-6272</span>
+        </a>
+        <a href="#booking" class="btn-book-now" id="nav-book-btn">Book Now</a>
+      </div>
+
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════
+       HERO SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="hero" id="home">
+    <div class="hero-bg" id="hero-bg"></div>
+    <div class="hero-overlay"></div>
+
+    <div class="hero-content">
+      <div class="hero-badge" data-animate="fade-up">Your Peaceful Florida Retreat</div>
+      <h1 class="hero-title" data-animate="fade-up" data-delay="150">
+        Welcome to<br/>
+        <span class="hero-title-accent">Three Oaks Motel</span>
+      </h1>
+      <p class="hero-subtitle" data-animate="fade-up" data-delay="300">
+        Comfort, warmth, and hospitality in the heart of Titusville, Florida.<br/>
+        Your home away from home — just minutes from Kennedy Space Center.
+      </p>
+      <div class="hero-btns" data-animate="fade-up" data-delay="450">
+        <a href="#booking" class="btn-primary" id="hero-book-btn">
+          <i class="fas fa-calendar-check"></i> Book Your Stay
+        </a>
+        <a href="#rooms" class="btn-secondary" id="hero-rooms-btn">
+          <i class="fas fa-door-open"></i> Explore Rooms
+        </a>
+      </div>
+    </div>
+
+    <!-- Floating Booking Bar -->
+    <div class="booking-bar" id="booking-bar" data-animate="fade-up" data-delay="600">
+      <div class="booking-bar-inner">
+        <div class="booking-field">
+          <label for="bar-checkin"><i class="fas fa-calendar-plus"></i> Check-In</label>
+          <input type="date" id="bar-checkin" name="bar-checkin" />
+        </div>
+        <div class="booking-divider"></div>
+        <div class="booking-field">
+          <label for="bar-checkout"><i class="fas fa-calendar-minus"></i> Check-Out</label>
+          <input type="date" id="bar-checkout" name="bar-checkout" />
+        </div>
+        <div class="booking-divider"></div>
+        <div class="booking-field">
+          <label for="bar-guests"><i class="fas fa-user-group"></i> Guests</label>
+          <select id="bar-guests" name="bar-guests">
+            <option>1 Guest</option>
+            <option selected>2 Guests</option>
+            <option>3 Guests</option>
+            <option>4 Guests</option>
+          </select>
+        </div>
+        <div class="booking-divider"></div>
+        <div class="booking-field">
+          <label for="bar-room"><i class="fas fa-bed"></i> Room Type</label>
+          <select id="bar-room" name="bar-room">
+            <option value="">Any Room</option>
+            <option value="king">One King Bed</option>
+            <option value="queens">Two Queen Beds</option>
+            <option value="fulls">Two Full Beds</option>
+          </select>
+        </div>
+        <button class="btn-search" id="bar-search-btn" onclick="scrollToBooking()">
+          <i class="fas fa-search"></i> Search
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       QUICK STATS STRIP
+  ═══════════════════════════════════════════ -->
+  <section class="stats-strip">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-item" data-animate="fade-up">
+          <span class="stat-number" data-count="3">0</span>
+          <span class="stat-label">Room Types</span>
+        </div>
+        <div class="stat-item" data-animate="fade-up" data-delay="100">
+          <span class="stat-number">24<small>/7</small></span>
+          <span class="stat-label">Front Desk</span>
+        </div>
+        <div class="stat-item" data-animate="fade-up" data-delay="200">
+          <span class="stat-number" data-count="5">0</span>
+          <span class="stat-label">Minutes to Kennedy Space Center</span>
+        </div>
+        <div class="stat-item" data-animate="fade-up" data-delay="300">
+          <span class="stat-number">100<small>%</small></span>
+          <span class="stat-label">Free WiFi Coverage</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       ABOUT SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="about" id="about">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-image-wrap" data-animate="fade-right">
+          <div class="about-img-frame">
+            <img src="images/hero.png" alt="Three Oaks Motel exterior surrounded by oak trees" class="about-img" />
+          </div>
+          <div class="about-badge-card">
+            <i class="fas fa-tree"></i>
+            <div>
+              <strong>Established</strong>
+              <span>Titusville, FL</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="about-content" data-animate="fade-left">
+          <div class="section-tag">Our Story</div>
+          <h2 class="section-title">A Warm Welcome<br/>Every Time You Stay</h2>
+          <p class="about-text">
+            Nestled under a canopy of majestic oak trees, Three Oaks Motel has been a beloved retreat for travelers passing through Titusville, Florida. Whether you're here to witness a rocket launch at nearby Kennedy Space Center or simply exploring Florida's scenic Space Coast, we offer the comfort and hospitality you deserve.
+          </p>
+          <p class="about-text">
+            We pride ourselves on clean, well-appointed rooms, friendly 24-hour service, and an atmosphere that feels like home. From the moment you arrive to the moment you check out — your comfort is our priority.
+          </p>
+
+          <div class="about-features">
+            <div class="about-feature">
+              <div class="feature-icon"><i class="fas fa-shield-heart"></i></div>
+              <div>
+                <strong>Safe &amp; Clean</strong>
+                <span>Rooms cleaned to the highest standards</span>
+              </div>
+            </div>
+            <div class="about-feature">
+              <div class="feature-icon"><i class="fas fa-map-location-dot"></i></div>
+              <div>
+                <strong>Prime Location</strong>
+                <span>Minutes from Kennedy Space Center &amp; the Space Coast</span>
+              </div>
+            </div>
+            <div class="about-feature">
+              <div class="feature-icon"><i class="fas fa-star"></i></div>
+              <div>
+                <strong>Guest Focused</strong>
+                <span>24-hour front desk ready to assist</span>
+              </div>
+            </div>
+          </div>
+
+          <a href="#booking" class="btn-primary" id="about-book-btn">
+            <i class="fas fa-calendar-check"></i> Reserve Your Room
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       AMENITIES SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="amenities" id="amenities">
+    <div class="amenities-bg-pattern"></div>
+    <div class="container">
+      <div class="section-header" data-animate="fade-up">
+        <div class="section-tag">Amenities</div>
+        <h2 class="section-title">Everything You Need<br/>For a Great Stay</h2>
+        <p class="section-sub">We've thought of all the little things that make your stay more comfortable.</p>
+      </div>
+
+      <div class="amenities-grid">
+        <div class="amenity-card" data-animate="fade-up">
+          <div class="amenity-icon-wrap">
+            <i class="fas fa-wifi"></i>
+          </div>
+          <h3>Free High-Speed WiFi</h3>
+          <p>Stay connected throughout your stay with complimentary high-speed wireless internet access.</p>
+        </div>
+
+        <div class="amenity-card" data-animate="fade-up" data-delay="100">
+          <div class="amenity-icon-wrap">
+            <i class="fas fa-mug-hot"></i>
+          </div>
+          <h3>Complimentary Coffee</h3>
+          <p>Start every morning right with our complimentary freshly brewed coffee for all guests.</p>
+        </div>
+
+        <div class="amenity-card" data-animate="fade-up" data-delay="200">
+          <div class="amenity-icon-wrap">
+            <i class="fas fa-concierge-bell"></i>
+          </div>
+          <h3>24-Hour Front Desk</h3>
+          <p>Our friendly staff is available around the clock to assist you anytime, day or night.</p>
+        </div>
+
+        <div class="amenity-card" data-animate="fade-up" data-delay="300">
+          <div class="amenity-icon-wrap">
+            <i class="fas fa-square-parking"></i>
+          </div>
+          <h3>Free Parking</h3>
+          <p>Ample free on-site parking available for all guests. No fees, no hassle.</p>
+        </div>
+
+        <div class="amenity-card" data-animate="fade-up" data-delay="400">
+          <div class="amenity-icon-wrap">
+            <i class="fas fa-snowflake"></i>
+          </div>
+          <h3>Air Conditioning</h3>
+          <p>Stay cool and comfortable in every season with individual climate control in each room.</p>
+        </div>
+
+        <div class="amenity-card" data-animate="fade-up" data-delay="500">
+          <div class="amenity-icon-wrap">
+            <i class="fas fa-tv"></i>
+          </div>
+          <h3>Flat-Screen TV</h3>
+          <p>Enjoy your favorite shows and channels on a flat-screen TV in every room.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       ROOMS SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="rooms" id="rooms">
+    <div class="container">
+      <div class="section-header" data-animate="fade-up">
+        <div class="section-tag">Accommodations</div>
+        <h2 class="section-title">Choose Your<br/>Perfect Room</h2>
+        <p class="section-sub">All rooms are equipped with free WiFi, complimentary coffee, and air conditioning.</p>
+      </div>
+
+      <div class="rooms-grid">
+
+        <!-- King Room -->
+        <div class="room-card" data-animate="fade-up" id="room-king">
+          <div class="room-img-wrap">
+            <img src="images/room-king.png" alt="One King Bed Room at Three Oaks Motel" class="room-img" loading="lazy" />
+            <div class="room-badge">Most Popular</div>
+          </div>
+          <div class="room-body">
+            <div class="room-header">
+              <h3 class="room-name">One King Bed</h3>
+              <div class="room-price">Call for rates</div>
+            </div>
+            <p class="room-desc">Our spacious King room offers a plush king-size bed, perfect for couples or solo travelers seeking maximum comfort and a great night's sleep.</p>
+            <ul class="room-features">
+              <li><i class="fas fa-check"></i> King-Size Bed</li>
+              <li><i class="fas fa-check"></i> Free WiFi</li>
+              <li><i class="fas fa-check"></i> Flat-Screen TV</li>
+              <li><i class="fas fa-check"></i> Air Conditioning</li>
+              <li><i class="fas fa-check"></i> Private Bathroom</li>
+              <li><i class="fas fa-check"></i> Complimentary Coffee</li>
+            </ul>
+            <a href="#booking" class="btn-room-book" onclick="preselectRoom('king')">
+              <i class="fas fa-bed"></i> Book This Room
+            </a>
+          </div>
+        </div>
+
+        <!-- Two Queen Room -->
+        <div class="room-card" data-animate="fade-up" data-delay="150" id="room-queens">
+          <div class="room-img-wrap">
+            <img src="images/room-queens.png" alt="Two Queen Beds Room at Three Oaks Motel" class="room-img" loading="lazy" />
+            <div class="room-badge room-badge-green">Great for Families</div>
+          </div>
+          <div class="room-body">
+            <div class="room-header">
+              <h3 class="room-name">Two Queen Beds</h3>
+              <div class="room-price">Call for rates</div>
+            </div>
+            <p class="room-desc">Ideal for small families or groups, our Two Queen room features two comfortable queen beds giving everyone space to relax and unwind.</p>
+            <ul class="room-features">
+              <li><i class="fas fa-check"></i> Two Queen Beds</li>
+              <li><i class="fas fa-check"></i> Free WiFi</li>
+              <li><i class="fas fa-check"></i> Flat-Screen TV</li>
+              <li><i class="fas fa-check"></i> Air Conditioning</li>
+              <li><i class="fas fa-check"></i> Private Bathroom</li>
+              <li><i class="fas fa-check"></i> Complimentary Coffee</li>
+            </ul>
+            <a href="#booking" class="btn-room-book" onclick="preselectRoom('queens')">
+              <i class="fas fa-bed"></i> Book This Room
+            </a>
+          </div>
+        </div>
+
+        <!-- Two Full Beds (2nd Floor) -->
+        <div class="room-card" data-animate="fade-up" data-delay="300" id="room-fulls">
+          <div class="room-img-wrap">
+            <img src="images/room-fulls.png" alt="Two Full Size Beds Second Floor Room at Three Oaks Motel" class="room-img" loading="lazy" />
+            <div class="room-badge room-badge-amber">2nd Floor View</div>
+          </div>
+          <div class="room-body">
+            <div class="room-header">
+              <h3 class="room-name">Two Full Beds</h3>
+              <div class="room-price">Call for rates</div>
+            </div>
+            <p class="room-desc">Located on the second floor, this room features two full-size beds and elevated views. Perfect for travelers who enjoy a little extra perspective on their stay.</p>
+            <ul class="room-features">
+              <li><i class="fas fa-check"></i> Two Full-Size Beds</li>
+              <li><i class="fas fa-check"></i> 2nd Floor Views</li>
+              <li><i class="fas fa-check"></i> Free WiFi</li>
+              <li><i class="fas fa-check"></i> Flat-Screen TV</li>
+              <li><i class="fas fa-check"></i> Air Conditioning</li>
+              <li><i class="fas fa-check"></i> Private Bathroom</li>
+            </ul>
+            <a href="#booking" class="btn-room-book" onclick="preselectRoom('fulls')">
+              <i class="fas fa-bed"></i> Book This Room
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       TESTIMONIALS SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="testimonials">
+    <div class="container">
+      <div class="section-header" data-animate="fade-up">
+        <div class="section-tag">Guest Reviews</div>
+        <h2 class="section-title">What Our Guests Say</h2>
+      </div>
+
+      <div class="testimonials-slider" id="testimonials-slider">
+        <div class="testimonials-track" id="testimonials-track">
+
+          <div class="testimonial-card">
+            <div class="stars">
+              <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+            </div>
+            <p class="testimonial-text">"Great little motel! The room was clean, the staff was friendly, and having free coffee in the morning was a nice touch. Will definitely stay here again when visiting Titusville."</p>
+            <div class="testimonial-author">
+              <div class="author-avatar">M</div>
+              <div>
+                <strong>Michael R.</strong>
+                <span>Titusville, FL</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="testimonial-card">
+            <div class="stars">
+              <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+            </div>
+            <p class="testimonial-text">"We stayed here for a rocket launch and couldn't have been happier. The price was fair, the room was spotless, and the front desk staff was incredibly helpful."</p>
+            <div class="testimonial-author">
+              <div class="author-avatar">S</div>
+              <div>
+                <strong>Sarah T.</strong>
+                <span>Atlanta, GA</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="testimonial-card">
+            <div class="stars">
+              <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-stroke"></i>
+            </div>
+            <p class="testimonial-text">"Solid, no-nonsense motel with everything you need. WiFi worked great, the room was comfortable, and I loved the location. Close to everything in Titusville."</p>
+            <div class="testimonial-author">
+              <div class="author-avatar">J</div>
+              <div>
+                <strong>James W.</strong>
+                <span>Orlando, FL</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="testimonial-card">
+            <div class="stars">
+              <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+            </div>
+            <p class="testimonial-text">"Traveled with my family and we got the two queen beds room — tons of space. Kids loved it, we loved the price, and the 24-hour front desk made check-in a breeze."</p>
+            <div class="testimonial-author">
+              <div class="author-avatar">L</div>
+              <div>
+                <strong>Linda K.</strong>
+                <span>Jacksonville, FL</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="slider-controls" id="slider-controls">
+        <button class="slider-btn" id="slider-prev" aria-label="Previous review"><i class="fas fa-chevron-left"></i></button>
+        <div class="slider-dots" id="slider-dots"></div>
+        <button class="slider-btn" id="slider-next" aria-label="Next review"><i class="fas fa-chevron-right"></i></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       GALLERY SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="gallery" id="gallery">
+    <div class="container">
+      <div class="section-header" data-animate="fade-up">
+        <div class="section-tag">Gallery</div>
+        <h2 class="section-title">A Glimpse of<br/>Three Oaks Motel</h2>
+        <p class="section-sub">See what makes us special. More photos coming soon!</p>
+      </div>
+
+      <div class="gallery-grid" id="gallery-grid">
+        <div class="gallery-item gallery-item-wide" data-animate="fade-up" data-src="images/hero.png">
+          <img src="images/hero.png" alt="Three Oaks Motel exterior at golden hour" loading="lazy" />
+          <div class="gallery-overlay"><i class="fas fa-expand"></i></div>
+        </div>
+        <div class="gallery-item" data-animate="fade-up" data-delay="100" data-src="images/room-king.png">
+          <img src="images/room-king.png" alt="King Bed Room" loading="lazy" />
+          <div class="gallery-overlay"><i class="fas fa-expand"></i></div>
+        </div>
+        <div class="gallery-item" data-animate="fade-up" data-delay="200" data-src="images/room-queens.png">
+          <img src="images/room-queens.png" alt="Two Queen Beds Room" loading="lazy" />
+          <div class="gallery-overlay"><i class="fas fa-expand"></i></div>
+        </div>
+        <div class="gallery-item" data-animate="fade-up" data-delay="300" data-src="images/room-fulls.png">
+          <img src="images/room-fulls.png" alt="Two Full Beds Room - Second Floor" loading="lazy" />
+          <div class="gallery-overlay"><i class="fas fa-expand"></i></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" id="lightbox-close" aria-label="Close"><i class="fas fa-times"></i></button>
+    <img src="" alt="Gallery image" id="lightbox-img" />
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       BOOKING SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="booking-section" id="booking">
+    <div class="booking-bg-overlay"></div>
+    <div class="container">
+      <div class="booking-wrap">
+        <div class="booking-info" data-animate="fade-right">
+          <div class="section-tag">Reservations</div>
+          <h2 class="section-title">Ready to Book<br/>Your Stay?</h2>
+          <p>Fill out the form and we'll confirm your reservation. You can also call us directly to book over the phone.</p>
+
+          <div class="booking-contact-info">
+            <div class="bci-item">
+              <i class="fas fa-phone"></i>
+              <div>
+                <strong>Call to Book</strong>
+                <a href="tel:+13212676272">(321) 267-6272</a>
+              </div>
+            </div>
+            <div class="bci-item">
+              <i class="fas fa-envelope"></i>
+              <div>
+                <strong>Email Us</strong>
+                <a href="mailto:threeoaksmotel@gmail.com">threeoaksmotel@gmail.com</a>
+              </div>
+            </div>
+            <div class="bci-item">
+              <i class="fas fa-clock"></i>
+              <div>
+                <strong>Check-in / Check-out</strong>
+                <span>2:00 PM / 11:00 AM</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="booking-form-card" data-animate="fade-left">
+          <form id="booking-form" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="first-name">First Name *</label>
+                <input type="text" id="first-name" name="first-name" placeholder="John" required />
+              </div>
+              <div class="form-group">
+                <label for="last-name">Last Name *</label>
+                <input type="text" id="last-name" name="last-name" placeholder="Doe" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" placeholder="john@example.com" required />
+              </div>
+              <div class="form-group">
+                <label for="phone">Phone *</label>
+                <input type="tel" id="phone" name="phone" placeholder="(321) 555-0000" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="checkin">Check-In Date *</label>
+                <input type="date" id="checkin" name="checkin" required />
+              </div>
+              <div class="form-group">
+                <label for="checkout">Check-Out Date *</label>
+                <input type="date" id="checkout" name="checkout" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="adults">Adults *</label>
+                <select id="adults" name="adults" required>
+                  <option value="1">1 Adult</option>
+                  <option value="2" selected>2 Adults</option>
+                  <option value="3">3 Adults</option>
+                  <option value="4">4 Adults</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="children">Children</label>
+                <select id="children" name="children">
+                  <option value="0" selected>0 Children</option>
+                  <option value="1">1 Child</option>
+                  <option value="2">2 Children</option>
+                  <option value="3">3 Children</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group full">
+              <label for="room-type">Room Type *</label>
+              <select id="room-type" name="room-type" required>
+                <option value="">Select a Room Type</option>
+                <option value="king">One King Bed</option>
+                <option value="queens">Two Queen Beds</option>
+                <option value="fulls">Two Full Beds (2nd Floor)</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label for="special-requests">Special Requests</label>
+              <textarea id="special-requests" name="special-requests" placeholder="Any special requests, accessibility needs, or questions..." rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn-submit" id="submit-booking">
+              <i class="fas fa-paper-plane"></i> Submit Booking Request
+            </button>
+          </form>
+
+          <!-- Success Message -->
+          <div class="booking-success" id="booking-success">
+            <div class="success-icon"><i class="fas fa-circle-check"></i></div>
+            <h3>Booking Request Received!</h3>
+            <p>Thank you! We'll contact you within 24 hours to confirm your reservation.</p>
+            <p>For immediate confirmation, call us at <a href="tel:+13212676272">(321) 267-6272</a>.</p>
+            <button class="btn-primary" onclick="resetForm()" id="reset-form-btn">Make Another Booking</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       CONTACT SECTION
+  ═══════════════════════════════════════════ -->
+  <section class="contact" id="contact">
+    <div class="container">
+      <div class="section-header" data-animate="fade-up">
+        <div class="section-tag">Contact Us</div>
+        <h2 class="section-title">Find Us in<br/>Titusville, FL</h2>
+      </div>
+
+      <div class="contact-grid">
+        <div class="contact-cards" data-animate="fade-right">
+          <div class="contact-card">
+            <div class="contact-icon"><i class="fas fa-location-dot"></i></div>
+            <div class="contact-details">
+              <h4>Address</h4>
+              <p>707 S. Hopkins Ave<br/>Titusville, FL 32780</p>
+              <a href="https://maps.google.com/?q=707+S+Hopkins+Ave,+Titusville,+FL+32780" target="_blank" class="contact-link">
+                Get Directions <i class="fas fa-arrow-right"></i>
+              </a>
+            </div>
+          </div>
+          <div class="contact-card">
+            <div class="contact-icon"><i class="fas fa-phone"></i></div>
+            <div class="contact-details">
+              <h4>Phone</h4>
+              <p>(321) 267-6272</p>
+              <a href="tel:+13212676272" class="contact-link">Call Now <i class="fas fa-arrow-right"></i></a>
+            </div>
+          </div>
+          <div class="contact-card">
+            <div class="contact-icon"><i class="fas fa-clock"></i></div>
+            <div class="contact-details">
+              <h4>Hours</h4>
+              <p>Front Desk: Open 24/7<br/>Check-In: 2:00 PM<br/>Check-Out: 11:00 AM</p>
+            </div>
+          </div>
+          <div class="contact-card">
+            <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+            <div class="contact-details">
+              <h4>Email</h4>
+              <p>threeoaksmotel@gmail.com</p>
+              <a href="mailto:threeoaksmotel@gmail.com" class="contact-link">Send Email <i class="fas fa-arrow-right"></i></a>
+            </div>
+          </div>
+        </div>
+
+        <div class="map-wrap" data-animate="fade-left">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3503.7!2d-80.8225!3d28.6122!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88e0a0a0a0a0a0a0%3A0x0!2s707%20S%20Hopkins%20Ave%2C%20Titusville%2C%20FL%2032780!5e0!3m2!1sen!2sus!4v1680000000000!5m2!1sen!2sus"
+            width="100%"
+            height="400"
+            style="border:0;"
+            allowfullscreen=""
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title="Three Oaks Motel location on Google Maps">
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════════ -->
+  <footer class="footer">
+    <div class="footer-top">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <div class="footer-logo">
+              <div class="logo-icon"><i class="fas fa-tree"></i></div>
+              <div class="logo-text">
+                <span class="logo-name">Three Oaks</span>
+                <span class="logo-sub">MOTEL</span>
+              </div>
+            </div>
+            <p class="footer-tagline">Your peaceful retreat in the heart of Titusville, Florida. Comfort, warmth, and hospitality awaits.</p>
+            <div class="footer-social">
+              <a href="https://facebook.com" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+            </div>
+          </div>
+
+          <div class="footer-col">
+            <h4>Quick Links</h4>
+            <ul>
+              <li><a href="#home">Home</a></li>
+              <li><a href="#about">About Us</a></li>
+              <li><a href="#rooms">Our Rooms</a></li>
+              <li><a href="#amenities">Amenities</a></li>
+              <li><a href="#gallery">Gallery</a></li>
+              <li><a href="#booking">Book Now</a></li>
+              <li><a href="#contact">Contact</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col">
+            <h4>Our Rooms</h4>
+            <ul>
+              <li><a href="#room-king">One King Bed</a></li>
+              <li><a href="#room-queens">Two Queen Beds</a></li>
+              <li><a href="#room-fulls">Two Full Beds (2nd Floor)</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col">
+            <h4>Contact Info</h4>
+            <ul class="footer-contact-list">
+              <li><i class="fas fa-location-dot"></i><span>707 S. Hopkins Ave, Titusville, FL 32780</span></li>
+              <li><i class="fas fa-phone"></i><a href="tel:+13212676272">(321) 267-6272</a></li>
+              <li><i class="fas fa-envelope"></i><a href="mailto:threeoaksmotel@gmail.com">threeoaksmotel@gmail.com</a></li>
+              <li><i class="fas fa-clock"></i><span>Front Desk: 24/7</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
+        <p>&copy; <span id="year"></span> Three Oaks Motel. All rights reserved. | 707 S. Hopkins Ave, Titusville, FL 32780</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scroll To Top -->
+  <button class="scroll-top" id="scroll-top" aria-label="Scroll to top">
+    <i class="fas fa-chevron-up"></i>
+  </button>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+</body>
+</html>
