@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# Local Database
+motel.db
+*.sqlite3
+
+# Environment
+.env
+.env.local
+
+# Build outputs
+frontend/dist/
+frontend/build/
+
+# IDE/OS files
+.DS_Store
+.vscode/
+.idea/
