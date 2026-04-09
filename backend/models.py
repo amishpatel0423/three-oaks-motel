@@ -12,9 +12,9 @@ class RoomStatus(enum.Enum):
     MAINTENANCE = "Maintenance"
 
 class RoomTypeEnum(enum.Enum):
-    APOLLO = "Apollo Standard"
-    GEMINI = "Gemini Deluxe"
-    ARTEMIS = "Artemis Suite"
+    ONE_QUEEN = "One Queen"
+    TWO_QUEEN = "Two Queen"
+    KING = "King"
 
 class PhysicalRoom(Base):
     __tablename__ = 'physical_rooms'

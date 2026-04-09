@@ -1,40 +1,85 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Orbitron:wght@400;500;700;900&display=swap');
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme {
+  --color-sun-white: #FFFFFF;
+  --color-sand: #F5DEB3;
+  --color-ocean: #006994;
+  --color-ocean-dark: #004d6d;
+  --color-sky-light: #F0F8FF;
+  
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'Inter', sans-serif;
+
+  --animate-fade-in: fadeIn 1s ease-out forwards;
+  --animate-parallax: parallax 10s linear infinite;
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes parallax {
+    from { background-position: 50% 0%; }
+    to { background-position: 50% 100%; }
+  }
+}
+
+:root {
+  --radius: 0.5rem;
+  --radius-lg: 1rem;
+}
 
 @layer base {
   body {
-    @apply font-montserrat text-slate-800 bg-nasa-light;
+    @apply font-body text-slate-800 bg-sun-white/95;
+    scroll-behavior: smooth;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-orbitron font-bold tracking-wider;
+    @apply font-display font-bold;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-nasa-orange hover:bg-orange-600 text-white font-orbitron py-3 px-8 rounded shadow-[0_0_15px_rgba(255,92,53,0.4)] transition-all duration-300 transform hover:scale-105 active:scale-95 tracking-widest text-sm sm:text-base;
+    @apply bg-ocean hover:bg-ocean-dark text-white font-semibold py-3 px-8 rounded-lg shadow-md transition-all duration-300 transform hover:-translate-y-1 active:scale-95;
   }
   
-  .glass-panel {
-    @apply bg-white/70 backdrop-blur-md border border-white/40 shadow-xl;
+  .btn-secondary {
+    @apply bg-transparent hover:bg-white/10 text-white border-2 border-white/60 font-semibold py-3 px-8 rounded-lg transition-all duration-300 transform hover:-translate-y-1;
+  }
+
+  .nav-link {
+    @apply text-slate-700 hover:text-ocean font-medium transition-colors duration-200 relative;
+  }
+
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-sm border border-white/50 shadow-xl rounded-xl;
+  }
+
+  .parallax-bg {
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  .fade-in {
+    opacity: 0;
+    animation: fadeIn 0.8s ease-out forwards;
   }
 }
 
-/* Custom scrollbar for webkit */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f1f1; 
+  @apply bg-sky-light;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1; 
-  border-radius: 4px;
+  @apply bg-slate-300 rounded-full border-4 border-sky-light;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8; 
+  @apply bg-slate-400;
 }
