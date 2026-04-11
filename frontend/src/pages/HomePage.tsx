@@ -184,12 +184,21 @@ export default function HomePage() {
             <div className="w-16 h-1 bg-ocean rounded-full mb-6" />
             <div className="grid grid-cols-2 gap-y-6 gap-x-8">
               {[
-                { icon: "fa-wifi", text: "Free Fast WiFi" },
-                { icon: "fa-parking", text: "Free Parking" },
-                { icon: "fa-snowflake", text: "Air Conditioning" },
-                { icon: "fa-tv", text: "Cable TV" },
-                { icon: "fa-coffee", text: "Daily Coffee" },
-                { icon: "fa-rocket", text: "Near Space Center" }
+                { icon: "fa-smoking-ban", text: "Non-smoking rooms" },
+                { icon: "fa-wifi", text: "Free Wifi" },
+                { icon: "fa-parking", text: "Free parking" },
+                { icon: "fa-bell-concierge", text: "Room service" },
+                { icon: "fa-video", text: "CCTV outside" },
+                { icon: "fa-clock", text: "24-hour front desk" },
+                { icon: "fa-building", text: "Smoke-free property" },
+                { icon: "fa-snowflake", text: "Air conditioning" },
+                { icon: "fa-fire", text: "Heating" },
+                { icon: "fa-shield-halved", text: "24-hour security" },
+                { icon: "fa-bell", text: "Smoke alarms" },
+                { icon: "fa-broom", text: "Daily housekeeping" },
+                { icon: "fa-fire-extinguisher", text: "Fire extinguishers" },
+                { icon: "fa-id-card", text: "Key card access" },
+                { icon: "fa-ban", text: "Non-pet friendly" }
               ].map((amenity, idx) => (
                 <div key={idx} className="flex items-center gap-3 text-slate-700 hover:text-ocean transition-colors">
                   <div className="w-10 h-10 rounded-full bg-sky-light flex items-center justify-center text-ocean shadow-sm">
@@ -241,7 +250,14 @@ export default function HomePage() {
               </div>
               <div className="p-8 flex-grow">
                 <h4 className="text-2xl font-display font-bold text-slate-800 mb-4">{room.title}</h4>
-                <p className="text-slate-600 mb-8 italic">{room.desc}</p>
+                <p className="text-slate-600 mb-6 italic">{room.desc}</p>
+                <div className="flex flex-wrap gap-2">
+                  {["Private bathroom", "Microwave", "Refrigerator", "Cable channels", "Internet", "Linens", "Dining area"].map((item, i) => (
+                    <span key={i} className="text-[11px] uppercase tracking-wide font-bold px-2 py-1 bg-sky-light/50 text-ocean rounded block">
+                      {item}
+                    </span>
+                  ))}
+                </div>
               </div>
               <div className="p-8 pt-0 mt-auto">
                 <a href="#booking" onClick={(e) => handleNavClick(e, 'booking')} className="btn-primary w-full text-center py-3">Book This Room</a>
