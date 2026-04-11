@@ -87,7 +87,7 @@ export default function HomePage() {
         <div 
           className="absolute inset-0 z-0 parallax-bg"
           style={{ 
-            backgroundImage: 'url("/images/hero.jpg")',
+            backgroundImage: 'url("./images/hero.jpg")',
             transform: `translateY(${scrollPos * 0.4}px)`
           }}
         />
@@ -118,19 +118,19 @@ export default function HomePage() {
           {[
             {
               title: "One Queen",
-              image: "/images/room-king.jpg", // Reusing copied photos
+              image: "./images/room-king.jpg", // Reusing copied photos
               price: "Call for Rates",
               features: ["1 Queen Bed", "Free High-Speed WiFi", "Individual AC", "Flat-Screen TV"]
             },
             {
               title: "Two Queen",
-              image: "/images/room-queens.jpg",
+              image: "./images/room-queens.jpg",
               price: "Call for Rates",
               features: ["2 Queen Beds", "Ideal for Families", "Full Amenities", "Cable TV"]
             },
             {
               title: "King",
-              image: "/images/room-fulls.jpg", // Using fulls as King for variety
+              image: "./images/room-fulls.jpg", // Using fulls as King for variety
               price: "Call for Rates",
               features: ["1 King Bed", "Premium Linens", "Spacious Layout", "Complimentary Coffee"]
             }
