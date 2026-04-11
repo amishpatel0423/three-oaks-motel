@@ -14,6 +14,7 @@ export default function HomePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [scrollPos, setScrollPos] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     setLoaded(true);
@@ -63,7 +64,7 @@ export default function HomePage() {
         <Link to="/" className="flex items-center">
           <img src="./images/logo.png" alt="Three Oaks Motel Logo" className="h-16 w-auto hover:scale-105 transition-transform duration-300" />
         </Link>
-        <div className="hidden md:flex items-center gap-6 lg:gap-8">
+        <div className="hidden md:flex items-center gap-6 lg:gap-8 transition-all">
           <a href="#about" className="nav-link">About</a>
           <a href="#amenities" className="nav-link hidden lg:block">Amenities</a>
           <a href="#rooms" className="nav-link">Rooms</a>
@@ -74,9 +75,35 @@ export default function HomePage() {
             <i className="fas fa-lock mr-2"></i>Admin
           </Link>
         </div>
-        <a href="tel:3212676272" className="btn-primary py-2 px-6 text-sm">
-          Call Now
-        </a>
+        
+        <div className="flex items-center gap-4">
+          <a href="tel:3212676272" className="hidden sm:flex btn-primary py-2 px-6 text-sm whitespace-nowrap">
+            Call Now
+          </a>
+          {/* Mobile Menu Button */}
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:hidden w-10 h-10 flex items-center justify-center text-slate-800 hover:text-ocean transition-colors focus:outline-none"
+          >
+            <i className={`fas ${isMenuOpen ? 'fa-times' : 'fa-bars'} text-xl`}></i>
+          </button>
+        </div>
+
+        {/* Mobile Menu Drawer */}
+        <div className={`fixed inset-0 top-[73px] z-40 md:hidden transition-all duration-300 ease-in-out ${isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
+          <div className="relative bg-white border-b border-slate-200 px-8 py-10 shadow-xl flex flex-col gap-6">
+            <a href="#about" onClick={() => setIsMenuOpen(false)} className="text-xl font-display font-medium text-slate-800 border-b border-slate-50 pb-2">About</a>
+            <a href="#amenities" onClick={() => setIsMenuOpen(false)} className="text-xl font-display font-medium text-slate-800 border-b border-slate-50 pb-2">Amenities</a>
+            <a href="#rooms" onClick={() => setIsMenuOpen(false)} className="text-xl font-display font-medium text-slate-800 border-b border-slate-50 pb-2">Rooms</a>
+            <a href="#booking" onClick={() => setIsMenuOpen(false)} className="text-xl font-display font-medium text-slate-800 border-b border-slate-50 pb-2">Book Now</a>
+            <Link to="/gallery" onClick={() => setIsMenuOpen(false)} className="text-xl font-display font-medium text-ocean border-b border-slate-50 pb-2">Photo Gallery</Link>
+            <a href="#contact" onClick={() => setIsMenuOpen(false)} className="text-xl font-display font-medium text-slate-800 border-b border-slate-50 pb-2">Contact</a>
+            <a href="tel:3212676272" className="btn-primary py-4 text-center text-lg mt-4">
+              Call Now
+            </a>
+          </div>
+        </div>
       </nav>
 
       {/* Hero Section */}

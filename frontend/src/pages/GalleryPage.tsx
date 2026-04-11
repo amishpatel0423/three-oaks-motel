@@ -4,6 +4,7 @@ import { galleryImages } from '../data/galleryAssets';
 
 export default function GalleryPage() {
   const [loaded, setLoaded] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     setLoaded(true);
@@ -17,9 +18,28 @@ export default function GalleryPage() {
         <Link to="/" className="flex items-center">
           <img src="./images/logo.png" alt="Three Oaks Motel Logo" className="h-14 w-auto drop-shadow-sm hover:scale-105 transition-transform duration-300" />
         </Link>
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-4">
           <Link to="/" className="nav-link hidden md:block font-bold text-slate-600 hover:text-ocean transition-colors">Return to Home</Link>
-          <a href="tel:3212676272" className="btn-primary py-2 px-6 text-sm shadow-md hover:-translate-y-1 transition-transform">Call Now</a>
+          <a href="tel:3212676272" className="hidden sm:flex btn-primary py-2 px-6 text-sm shadow-md hover:-translate-y-1 transition-transform">Call Now</a>
+          
+          {/* Mobile Menu Button */}
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:hidden w-10 h-10 flex items-center justify-center text-slate-800 hover:text-ocean transition-colors focus:outline-none"
+          >
+            <i className={`fas ${isMenuOpen ? 'fa-times' : 'fa-bars'} text-xl`}></i>
+          </button>
+        </div>
+
+        {/* Mobile Menu Drawer */}
+        <div className={`fixed inset-0 top-[73px] z-40 md:hidden transition-all duration-300 ease-in-out ${isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
+          <div className="relative bg-white border-b border-slate-200 px-8 py-10 shadow-xl flex flex-col gap-6">
+            <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-xl font-display font-medium text-slate-800 border-b border-slate-50 pb-2">Home</Link>
+            <a href="tel:3212676272" className="btn-primary py-4 text-center text-lg mt-4">
+              Call Now
+            </a>
+          </div>
         </div>
       </nav>
 
