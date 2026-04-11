@@ -25,6 +25,16 @@ export default function HomePage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    setIsMenuOpen(false);
+    const element = document.getElementById(id);
+    if (element) {
+      const topOffset = element.getBoundingClientRect().top + window.scrollY - 100;
+      window.scrollTo({ top: topOffset, behavior: 'smooth' });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (new Date(formData.checkOut) <= new Date(formData.checkIn)) {
@@ -65,12 +75,12 @@ export default function HomePage() {
           <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Three Oaks Motel Logo" className="h-16 w-auto hover:scale-105 transition-transform duration-300" />
         </Link>
         <div className="hidden md:flex items-center gap-6 lg:gap-8 transition-all">
-          <a href="#about" className="nav-link">About</a>
-          <a href="#amenities" className="nav-link hidden lg:block">Amenities</a>
-          <a href="#rooms" className="nav-link">Rooms</a>
-          <a href="#booking" className="nav-link">Book Now</a>
+          <a href="#about" onClick={(e) => handleNavClick(e, 'about')} className="nav-link">About</a>
+          <a href="#amenities" onClick={(e) => handleNavClick(e, 'amenities')} className="nav-link hidden lg:block">Amenities</a>
+          <a href="#rooms" onClick={(e) => handleNavClick(e, 'rooms')} className="nav-link">Rooms</a>
+          <a href="#booking" onClick={(e) => handleNavClick(e, 'booking')} className="nav-link">Book Now</a>
           <Link to="/gallery" className="nav-link font-bold text-ocean">Gallery</Link>
-          <a href="#contact" className="nav-link">Contact</a>
+          <a href="#contact" onClick={(e) => handleNavClick(e, 'contact')} className="nav-link">Contact</a>
           <Link to="/admin" className="nav-link border-l pl-8 border-slate-200">
             <i className="fas fa-lock mr-2"></i>Admin
           </Link>
@@ -94,18 +104,30 @@ export default function HomePage() {
         </div>
 
         {/* Mobile Menu Drawer - Higher Z-Index */}
-        <div className={`fixed inset-0 z-[55] md:hidden transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${isMenuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'}`}>
+        <div className={`fixed inset-0 z-[70] md:hidden transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${isMenuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'}`}>
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsMenuOpen(false)}></div>
-          <div className="relative ml-auto h-full w-[80%] max-w-sm bg-white shadow-2xl flex flex-col p-8 pt-24 gap-6 overflow-y-auto">
-            <h2 className="text-xs uppercase tracking-[0.3em] text-ocean font-bold mb-2">Navigation</h2>
-            <a href="#about" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">About Us</a>
-            <a href="#amenities" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Amenities</a>
-            <a href="#rooms" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Guest Rooms</a>
-            <a href="#booking" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Book Now</a>
+          <div className="relative ml-auto h-full w-[85%] max-w-sm bg-white shadow-2xl flex flex-col p-8 pt-8 gap-6 overflow-y-auto">
+            
+            {/* Explicit Close Button inside Drawer */}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xs uppercase tracking-[0.3em] text-ocean font-bold">Navigation</h2>
+              <button 
+                onClick={() => setIsMenuOpen(false)}
+                className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-ocean transition-all focus:outline-none bg-slate-50 rounded-full"
+                aria-label="Close Menu"
+              >
+                <i className="fas fa-times text-xl"></i>
+              </button>
+            </div>
+
+            <a href="#about" onClick={(e) => handleNavClick(e, 'about')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">About Us</a>
+            <a href="#amenities" onClick={(e) => handleNavClick(e, 'amenities')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Amenities</a>
+            <a href="#rooms" onClick={(e) => handleNavClick(e, 'rooms')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Guest Rooms</a>
+            <a href="#booking" onClick={(e) => handleNavClick(e, 'booking')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Book Now</a>
             <Link to="/gallery" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-ocean border-b border-slate-100 pb-4 tracking-tight flex items-center justify-between">
               Photo Gallery <i className="fas fa-chevron-right text-sm opacity-30"></i>
             </Link>
-            <a href="#contact" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Contact</a>
+            <a href="#contact" onClick={(e) => handleNavClick(e, 'contact')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Contact</a>
             
             <div className="mt-auto pt-8">
               <a href="tel:3212676272" className="btn-primary w-full py-5 text-center text-xl flex items-center justify-center gap-3">
@@ -135,7 +157,7 @@ export default function HomePage() {
           <p className="text-xl md:text-2xl font-light mb-10 drop-shadow-md">
             Comfortable, clean, and exactly 20 minutes from the Kennedy Space Center.
           </p>
-          <a href="#booking" className="btn-primary text-lg px-12 py-4">
+          <a href="#booking" onClick={(e) => handleNavClick(e, 'booking')} className="btn-primary text-lg px-12 py-4">
             Book Your Stay
           </a>
         </div>
@@ -222,7 +244,7 @@ export default function HomePage() {
                 <p className="text-slate-600 mb-8 italic">{room.desc}</p>
               </div>
               <div className="p-8 pt-0 mt-auto">
-                <a href="#booking" className="btn-primary w-full text-center py-3">Book This Room</a>
+                <a href="#booking" onClick={(e) => handleNavClick(e, 'booking')} className="btn-primary w-full text-center py-3">Book This Room</a>
               </div>
             </div>
           ))}
