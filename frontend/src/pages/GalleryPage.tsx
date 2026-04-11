@@ -14,14 +14,8 @@ export default function GalleryPage() {
     <div className={`min-h-screen bg-sky-light/30 transition-opacity duration-1000 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 py-4 px-8 flex justify-between items-center shadow-sm">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-ocean rounded-lg flex items-center justify-center text-white shadow-md">
-            <i className="fas fa-umbrella-beach"></i>
-          </div>
-          <div>
-            <h1 className="text-xl font-display font-bold text-slate-800">Three Oaks</h1>
-            <p className="text-[10px] tracking-[0.2em] text-ocean font-bold uppercase">Florida Coastal</p>
-          </div>
+        <Link to="/" className="flex items-center">
+          <img src="./images/logo.png" alt="Three Oaks Motel Logo" className="h-14 w-auto drop-shadow-sm hover:scale-105 transition-transform duration-300" />
         </Link>
         <div className="flex items-center gap-8">
           <Link to="/" className="nav-link hidden md:block font-bold text-slate-600 hover:text-ocean transition-colors">Return to Home</Link>

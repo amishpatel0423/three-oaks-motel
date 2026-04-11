@@ -60,15 +60,9 @@ export default function HomePage() {
     <div className={`min-h-screen bg-sun-white transition-opacity duration-1000 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 glass-card rounded-none border-t-0 border-x-0 py-4 px-8 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-ocean rounded-lg flex items-center justify-center text-white">
-            <i className="fas fa-umbrella-beach"></i>
-          </div>
-          <div>
-            <h1 className="text-xl font-display font-bold text-slate-800">Three Oaks</h1>
-            <p className="text-[10px] tracking-[0.2em] text-ocean font-bold uppercase">Florida Coastal</p>
-          </div>
-        </div>
+        <Link to="/" className="flex items-center">
+          <img src="./images/logo.png" alt="Three Oaks Motel Logo" className="h-16 w-auto hover:scale-105 transition-transform duration-300" />
+        </Link>
         <div className="hidden md:flex items-center gap-6 lg:gap-8">
           <a href="#about" className="nav-link">About</a>
           <a href="#amenities" className="nav-link hidden lg:block">Amenities</a>
@@ -297,7 +291,7 @@ export default function HomePage() {
       <footer id="contact" className="bg-slate-900 text-white py-20 px-8">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
           <div>
-            <h4 className="text-2xl font-display font-bold mb-6">Three Oaks Motel</h4>
+            <img src="./images/logo.png" alt="Three Oaks Motel Logo" className="h-12 w-auto mb-6 brightness-0 invert opacity-80" />
             <p className="text-slate-400 font-light leading-relaxed">
               Experience the best of Titusville. Comfortable accommodations, friendly service, and the closest views of Florida's legendary launches.
             </p>
