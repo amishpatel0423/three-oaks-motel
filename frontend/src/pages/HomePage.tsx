@@ -221,7 +221,7 @@ export default function HomePage() {
             },
             {
               title: "Two Queen",
-              image: "./images/two-queen.dng",
+              image: "./images/two-queen.jpg",
               price: "Call for Rates",
               desc: "Two spacious queen beds, ideal for families or small groups."
             },
