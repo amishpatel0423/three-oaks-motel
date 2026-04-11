@@ -267,6 +267,41 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* High Ratings / Testimonials Section */}
+      <section className="py-16 bg-white border-y border-slate-100 mb-16">
+        <div className="max-w-7xl mx-auto px-8">
+          <div className="flex flex-col items-center justify-center text-center mb-12">
+            <div className="flex gap-2 text-amber-400 text-xl md:text-2xl mb-4">
+              <i className="fas fa-star"></i>
+              <i className="fas fa-star"></i>
+              <i className="fas fa-star"></i>
+              <i className="fas fa-star"></i>
+              <i className="fas fa-star"></i>
+            </div>
+            <h3 className="text-3xl font-display font-bold text-slate-900 mb-3">Top Rated by Guests</h3>
+            <p className="text-slate-500 max-w-2xl mx-auto">Consistently applauded for our cleanliness, pristine location, and excellent local hospitality.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+             <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
+               <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
+               <p className="relative z-10 italic text-slate-700 leading-relaxed">"This is hands down the cleanest motel I've stayed at in Titusville. The owners are incredibly accommodating and the property looks immaculate."</p>
+               <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Google Review</span>
+             </div>
+             <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
+               <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
+               <p className="relative z-10 italic text-slate-700 leading-relaxed">"Perfect spot to watch the rocket launches! The location is phenomenal and you're right by the coastline and all the prominent Space Center spots."</p>
+               <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Booking Review</span>
+             </div>
+             <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
+               <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
+               <p className="relative z-10 italic text-slate-700 leading-relaxed">"Excellent value. High pressure hot showers, freezing cold AC, and super comfortable beds. Will absolutely book again next time I am in town."</p>
+               <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Guest</span>
+             </div>
+          </div>
+        </div>
+      </section>
+
+
       {/* Booking Form Section */}
       <section id="booking" className="py-24 bg-sky-light/50">
         <div className="max-w-4xl mx-auto px-8">
@@ -361,6 +396,21 @@ export default function HomePage() {
             </form>
           </div>
         </div>
+      </section>
+
+      {/* Interactive Location Map */}
+      <section className="w-full h-96 min-h-[400px] relative">
+        <iframe 
+          title="Three Oaks Motel Location Map"
+          src="https://maps.google.com/maps?q=Three+Oaks+Motel,+Titusville&t=&z=15&ie=UTF8&iwloc=&output=embed" 
+          width="100%" 
+          height="100%" 
+          style={{ border: 0 }} 
+          allowFullScreen={true} 
+          loading="lazy" 
+          referrerPolicy="no-referrer-when-downgrade"
+          className="w-full h-full grayscale-[25%] hover:grayscale-0 transition-all duration-[1000ms]"
+        ></iframe>
       </section>
 
       {/* Footer */}
