@@ -118,19 +118,19 @@ export default function HomePage() {
           {[
             {
               title: "One Queen",
-              image: "./images/room-king.jpg", // Reusing copied photos
+              image: "./images/one-queen.jpg", // Reusing copied photos
               price: "Call for Rates",
               features: ["1 Queen Bed", "Free High-Speed WiFi", "Individual AC", "Flat-Screen TV"]
             },
             {
               title: "Two Queen",
-              image: "./images/room-queens.jpg",
+              image: "./images/two-queen.jpg",
               price: "Call for Rates",
               features: ["2 Queen Beds", "Ideal for Families", "Full Amenities", "Cable TV"]
             },
             {
-              title: "King",
-              image: "./images/room-fulls.jpg", // Using fulls as King for variety
+              title: "2 Double Bed",
+              image: "./images/two-double.jpg", // Using fulls as King for variety
               price: "Call for Rates",
               features: ["1 King Bed", "Premium Linens", "Spacious Layout", "Complimentary Coffee"]
             }

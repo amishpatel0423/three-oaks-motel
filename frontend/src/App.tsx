@@ -4,7 +4,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
-    <Router>
+    <Router basename="/three-oaks-motel">
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/admin" element={<AdminDashboard />} />
