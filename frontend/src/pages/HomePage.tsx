@@ -62,7 +62,7 @@ export default function HomePage() {
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 glass-card rounded-none border-t-0 border-x-0 py-4 px-8 flex justify-between items-center">
         <Link to="/" className="flex items-center">
-          <img src="./images/logo.png" alt="Three Oaks Motel Logo" className="h-16 w-auto hover:scale-105 transition-transform duration-300" />
+          <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Three Oaks Motel Logo" className="h-16 w-auto hover:scale-105 transition-transform duration-300" />
         </Link>
         <div className="hidden md:flex items-center gap-6 lg:gap-8 transition-all">
           <a href="#about" className="nav-link">About</a>
@@ -80,28 +80,39 @@ export default function HomePage() {
           <a href="tel:3212676272" className="hidden sm:flex btn-primary py-2 px-6 text-sm whitespace-nowrap">
             Call Now
           </a>
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button - Explicitly Z-Indexed */}
           <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden w-10 h-10 flex items-center justify-center text-slate-800 hover:text-ocean transition-colors focus:outline-none"
+            onClick={(e) => {
+              e.preventDefault();
+              setIsMenuOpen(!isMenuOpen);
+            }}
+            className="md:hidden w-12 h-12 flex items-center justify-center text-slate-800 hover:text-ocean transition-all focus:outline-none relative z-[60]"
+            aria-label="Toggle Menu"
           >
-            <i className={`fas ${isMenuOpen ? 'fa-times' : 'fa-bars'} text-xl`}></i>
+            <i className={`fas ${isMenuOpen ? 'fa-times' : 'fa-bars'} text-2xl`}></i>
           </button>
         </div>
 
-        {/* Mobile Menu Drawer */}
-        <div className={`fixed inset-0 top-[73px] z-40 md:hidden transition-all duration-300 ease-in-out ${isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
-          <div className="relative bg-white border-b border-slate-200 px-8 py-10 shadow-xl flex flex-col gap-6">
-            <a href="#about" onClick={() => setIsMenuOpen(false)} className="text-xl font-display font-medium text-slate-800 border-b border-slate-50 pb-2">About</a>
-            <a href="#amenities" onClick={() => setIsMenuOpen(false)} className="text-xl font-display font-medium text-slate-800 border-b border-slate-50 pb-2">Amenities</a>
-            <a href="#rooms" onClick={() => setIsMenuOpen(false)} className="text-xl font-display font-medium text-slate-800 border-b border-slate-50 pb-2">Rooms</a>
-            <a href="#booking" onClick={() => setIsMenuOpen(false)} className="text-xl font-display font-medium text-slate-800 border-b border-slate-50 pb-2">Book Now</a>
-            <Link to="/gallery" onClick={() => setIsMenuOpen(false)} className="text-xl font-display font-medium text-ocean border-b border-slate-50 pb-2">Photo Gallery</Link>
-            <a href="#contact" onClick={() => setIsMenuOpen(false)} className="text-xl font-display font-medium text-slate-800 border-b border-slate-50 pb-2">Contact</a>
-            <a href="tel:3212676272" className="btn-primary py-4 text-center text-lg mt-4">
-              Call Now
-            </a>
+        {/* Mobile Menu Drawer - Higher Z-Index */}
+        <div className={`fixed inset-0 z-[55] md:hidden transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${isMenuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'}`}>
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsMenuOpen(false)}></div>
+          <div className="relative ml-auto h-full w-[80%] max-w-sm bg-white shadow-2xl flex flex-col p-8 pt-24 gap-6 overflow-y-auto">
+            <h2 className="text-xs uppercase tracking-[0.3em] text-ocean font-bold mb-2">Navigation</h2>
+            <a href="#about" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">About Us</a>
+            <a href="#amenities" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Amenities</a>
+            <a href="#rooms" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Guest Rooms</a>
+            <a href="#booking" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Book Now</a>
+            <Link to="/gallery" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-ocean border-b border-slate-100 pb-4 tracking-tight flex items-center justify-between">
+              Photo Gallery <i className="fas fa-chevron-right text-sm opacity-30"></i>
+            </Link>
+            <a href="#contact" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Contact</a>
+            
+            <div className="mt-auto pt-8">
+              <a href="tel:3212676272" className="btn-primary w-full py-5 text-center text-xl flex items-center justify-center gap-3">
+                <i className="fas fa-phone-alt animate-pulse"></i> Call to Book
+              </a>
+              <p className="text-center text-slate-400 text-xs mt-6 italic">Secure your Space Coast stay today.</p>
+            </div>
           </div>
         </div>
       </nav>
@@ -111,7 +122,7 @@ export default function HomePage() {
         <div 
           className="absolute inset-0 z-0 parallax-bg"
           style={{ 
-            backgroundImage: 'url("./images/hero.jpg")',
+            backgroundImage: `url("${import.meta.env.BASE_URL}images/hero.jpg")`,
             transform: `translateY(${scrollPos * 0.4}px)`
           }}
         />
@@ -201,7 +212,7 @@ export default function HomePage() {
           ].map((room, idx) => (
             <div key={idx} className="glass-card overflow-hidden hover:shadow-2xl transition-shadow duration-500 flex flex-col h-full">
               <div className="h-64 overflow-hidden relative group">
-                <img src={room.image} alt={room.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                <img src={`${import.meta.env.BASE_URL}${room.image.replace('./', '')}`} alt={room.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 <div className="absolute top-4 right-4 bg-ocean text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
                   {room.price}
                 </div>
@@ -318,7 +329,7 @@ export default function HomePage() {
       <footer id="contact" className="bg-slate-900 text-white py-20 px-8">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
           <div>
-            <img src="./images/logo.png" alt="Three Oaks Motel Logo" className="h-12 w-auto mb-6 brightness-0 invert opacity-80" />
+            <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Three Oaks Motel Logo" className="h-12 w-auto mb-6 brightness-0 invert opacity-80" />
             <p className="text-slate-400 font-light leading-relaxed">
               Experience the best of Titusville. Comfortable accommodations, friendly service, and the closest views of Florida's legendary launches.
             </p>
