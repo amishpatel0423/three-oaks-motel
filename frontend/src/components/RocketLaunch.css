@@ -1,0 +1,77 @@
+/* Rocket Trajectory */
+.rocket-container {
+  /* Using 150vh so it goes way past the top edge */
+  animation: rocketLaunch 3.5s cubic-bezier(0.5, 0, 0.2, 1) forwards;
+  will-change: transform;
+}
+
+@keyframes rocketLaunch {
+  0% {
+    transform: translate(-50%, 150%);
+  }
+  15% {
+    transform: translate(-50%, 80%); /* Ignite and hold slightly */
+  }
+  30% {
+    transform: translate(-50%, 82%) rotate(2deg); /* Rumble */
+  }
+  35% {
+    transform: translate(-50%, 82%) rotate(-2deg); /* Rumble */
+  }
+  100% {
+    transform: translate(-50%, -150vh) rotate(0deg); /* Shoot up */
+  }
+}
+
+.rocket-image {
+   animation: rocketVibrate 0.1s linear infinite alternate;
+}
+
+@keyframes rocketVibrate {
+   0% { transform: translate(1px, 1px) rotate(0deg); }
+   100% { transform: translate(-1px, -1px) rotate(0.5deg); }
+}
+
+/* Engine Flames */
+@keyframes flameFlicker {
+  0%, 100% { transform: scaleY(1); opacity: 0.6; }
+  50% { transform: scaleY(1.3); opacity: 0.9; }
+}
+.animate-flicker {
+  animation: flameFlicker 0.1s infinite alternate;
+}
+
+/* Smoke Styles */
+.smoke-puff {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, rgba(230,230,230,0.9) 0%, rgba(200,200,200,0) 80%);
+  border-radius: 50%;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: expandSmoke 2s ease-out infinite;
+  mix-blend-mode: screen;
+}
+
+.puff-1 { animation-delay: 0.1s; width: 80px; height: 80px; }
+.puff-2 { animation-delay: 0.3s; margin-left: -30px; animation-name: expandSmokeLeft; }
+.puff-3 { animation-delay: 0.5s; margin-left: 30px; animation-name: expandSmokeRight; }
+.puff-4 { animation-delay: 0.7s; margin-left: -45px; width: 90px; }
+.puff-5 { animation-delay: 0.8s; margin-left: 45px; width: 70px; }
+
+@keyframes expandSmoke {
+  0% { transform: translateX(-50%) translateY(0) scale(0.5); opacity: 0.8; }
+  100% { transform: translateX(-50%) translateY(120px) scale(3); opacity: 0; }
+}
+
+@keyframes expandSmokeLeft {
+  0% { transform: translateX(-50%) translateY(0) scale(0.5); opacity: 0.8; }
+  100% { transform: translateX(calc(-50% - 60px)) translateY(100px) scale(2.5); opacity: 0; }
+}
+
+@keyframes expandSmokeRight {
+  0% { transform: translateX(-50%) translateY(0) scale(0.5); opacity: 0.8; }
+  100% { transform: translateX(calc(-50% + 60px)) translateY(110px) scale(2.8); opacity: 0; }
+}

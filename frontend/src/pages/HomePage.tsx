@@ -9,7 +9,7 @@ export default function HomePage() {
     phone: '',
     checkIn: '',
     checkOut: '',
-    roomType: 'One Queen'
+    roomType: 'One King'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -58,7 +58,7 @@ export default function HomePage() {
       });
       if (response.ok) {
         setShowSuccess(true);
-        setFormData({ name: '', email: '', phone: '', checkIn: '', checkOut: '', roomType: 'One Queen' });
+        setFormData({ name: '', email: '', phone: '', checkIn: '', checkOut: '', roomType: 'One King' });
       }
     } catch (error) {
       console.error("Booking error:", error);
@@ -214,20 +214,20 @@ export default function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             {
-              title: "One Queen",
-              image: "./images/one-queen.jpg", // Reusing copied photos
+              title: "One King",
+              image: "./images/one-king.jpg",
               price: "Call for Rates",
-              desc: "A comfortable queen bed perfect for solo travelers or couples."
+              desc: "A spacious king bed perfect for solo travelers or couples."
             },
             {
               title: "Two Queen",
-              image: "./images/two-queen.jpg",
+              image: "./images/two-queen.dng",
               price: "Call for Rates",
               desc: "Two spacious queen beds, ideal for families or small groups."
             },
             {
               title: "2 Double Bed",
-              image: "./images/two-double.jpg", // Using fulls as King for variety
+              image: "./images/two-double.jpg",
               price: "Call for Rates",
               desc: "Two full beds with a comfortable layout for your stay."
             }
@@ -305,9 +305,9 @@ export default function HomePage() {
                     value={formData.roomType}
                     onChange={(e) => setFormData({...formData, roomType: e.target.value})}
                   >
-                    <option>One Queen</option>
+                    <option>One King</option>
                     <option>Two Queen</option>
-                    <option>King</option>
+                    <option>2 Double Bed</option>
                   </select>
                 </div>
               </div>
