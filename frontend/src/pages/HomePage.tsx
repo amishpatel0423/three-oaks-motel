@@ -85,13 +85,13 @@ export default function HomePage() {
             <i className="fas fa-lock mr-2"></i>Admin
           </Link>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <a href="tel:3212676272" className="hidden sm:flex btn-primary py-2 px-6 text-sm whitespace-nowrap">
             Call Now
           </a>
           {/* Mobile Menu Button - Explicitly Z-Indexed */}
-          <button 
+          <button
             onClick={(e) => {
               e.preventDefault();
               setIsMenuOpen(!isMenuOpen);
@@ -108,11 +108,11 @@ export default function HomePage() {
       <div className={`fixed inset-0 z-[70] md:hidden transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${isMenuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'}`}>
         <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsMenuOpen(false)}></div>
         <div className="relative ml-auto h-full w-[85%] max-w-sm bg-white shadow-2xl flex flex-col p-8 pt-8 gap-6 overflow-y-auto">
-          
+
           {/* Explicit Close Button inside Drawer */}
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xs uppercase tracking-[0.3em] text-ocean font-bold">Navigation</h2>
-            <button 
+            <button
               onClick={() => setIsMenuOpen(false)}
               className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-ocean transition-all focus:outline-none bg-slate-50 rounded-full"
               aria-label="Close Menu"
@@ -129,7 +129,7 @@ export default function HomePage() {
             Photo Gallery <i className="fas fa-chevron-right text-sm opacity-30"></i>
           </Link>
           <a href="#contact" onClick={(e) => handleNavClick(e, 'contact')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Contact</a>
-          
+
           <div className="mt-auto pt-8">
             <a href="tel:3212676272" className="btn-primary w-full py-5 text-center text-xl flex items-center justify-center gap-3">
               <i className="fas fa-phone-alt animate-pulse"></i> Call to Book
@@ -141,15 +141,15 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <section className="relative h-[90vh] flex items-center justify-center overflow-hidden">
-        <div 
+        <div
           className="absolute inset-0 z-0 parallax-bg"
-          style={{ 
+          style={{
             backgroundImage: `url("${import.meta.env.BASE_URL}images/hero.jpg")`,
             transform: `translateY(${scrollPos * 0.4}px)`
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-sun-white/20 z-10" />
-        
+
         <div className="relative z-20 text-center text-white px-4 max-w-4xl">
           <h2 className="text-5xl md:text-7xl font-display font-bold mb-6 drop-shadow-lg">
             Welcome to the Space Coast
@@ -177,7 +177,7 @@ export default function HomePage() {
               Experience authentic local hospitality with modern conveniences designed to make your mission a success. Whether you're here to catch a launch or enjoy the sun, we're ready to host you.
             </p>
           </div>
-          
+
           {/* Amenities */}
           <div id="amenities">
             <h3 className="text-3xl font-display font-bold text-slate-900 mb-4">Property Amenities</h3>
@@ -198,7 +198,8 @@ export default function HomePage() {
                 { icon: "fa-broom", text: "Daily housekeeping" },
                 { icon: "fa-fire-extinguisher", text: "Fire extinguishers" },
                 { icon: "fa-id-card", text: "Key card access" },
-                { icon: "fa-ban", text: "Non-pet friendly" }
+                { icon: "fa-ban", text: "Non-pet friendly" },
+                { icon: "fa-chair", text: "Patio" }
               ].map((amenity, idx) => (
                 <div key={idx} className="flex items-center gap-3 text-slate-700 hover:text-ocean transition-colors">
                   <div className="w-10 h-10 rounded-full bg-sky-light flex items-center justify-center text-ocean shadow-sm">
@@ -282,21 +283,21 @@ export default function HomePage() {
             <p className="text-slate-500 max-w-2xl mx-auto">Consistently applauded for our cleanliness, pristine location, and excellent local hospitality.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-             <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
-               <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
-               <p className="relative z-10 italic text-slate-700 leading-relaxed">"This is hands down the cleanest motel I've stayed at in Titusville. The owners are incredibly accommodating and the property looks immaculate."</p>
-               <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Google Review</span>
-             </div>
-             <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
-               <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
-               <p className="relative z-10 italic text-slate-700 leading-relaxed">"Perfect spot to watch the rocket launches! The location is phenomenal and you're right by the coastline and all the prominent Space Center spots."</p>
-               <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Booking Review</span>
-             </div>
-             <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
-               <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
-               <p className="relative z-10 italic text-slate-700 leading-relaxed">"Excellent value. High pressure hot showers, freezing cold AC, and super comfortable beds. Will absolutely book again next time I am in town."</p>
-               <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Guest</span>
-             </div>
+            <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
+              <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
+              <p className="relative z-10 italic text-slate-700 leading-relaxed">"This is hands down the cleanest motel I've stayed at in Titusville. The owners are incredibly accommodating and the property looks immaculate."</p>
+              <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Google Review</span>
+            </div>
+            <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
+              <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
+              <p className="relative z-10 italic text-slate-700 leading-relaxed">"Perfect spot to watch the rocket launches! The location is phenomenal and you're right by the coastline and all the prominent Space Center spots."</p>
+              <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Booking Review</span>
+            </div>
+            <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
+              <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
+              <p className="relative z-10 italic text-slate-700 leading-relaxed">"Excellent value. High pressure hot showers, freezing cold AC, and super comfortable beds. Will absolutely book again next time I am in town."</p>
+              <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Guest</span>
+            </div>
           </div>
         </div>
       </section>
@@ -310,29 +311,29 @@ export default function HomePage() {
               <h3 className="text-3xl font-display font-bold text-slate-900 mb-2">Plan Your Stay</h3>
               <p className="text-slate-600">Reserve your room just minutes from the launches.</p>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Guest Name</label>
-                  <input 
-                    type="text" 
-                    required 
+                  <input
+                    type="text"
+                    required
                     placeholder="John Doe"
                     className="w-full p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-ocean/50"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
-                  <input 
-                    type="email" 
-                    required 
+                  <input
+                    type="email"
+                    required
                     placeholder="john@example.com"
                     className="w-full p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-ocean/50"
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
               </div>
@@ -340,21 +341,21 @@ export default function HomePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Phone Number</label>
-                  <input 
-                    type="tel" 
-                    required 
+                  <input
+                    type="tel"
+                    required
                     placeholder="(321) 555-0000"
                     className="w-full p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-ocean/50"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Room Preference</label>
-                  <select 
+                  <select
                     className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-ocean/50"
                     value={formData.roomType}
-                    onChange={(e) => setFormData({...formData, roomType: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, roomType: e.target.value })}
                   >
                     <option>One King</option>
                     <option>Two Queen</option>
@@ -366,28 +367,28 @@ export default function HomePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Check-in Date</label>
-                  <input 
-                    type="date" 
-                    required 
+                  <input
+                    type="date"
+                    required
                     className="w-full p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-ocean/50"
                     value={formData.checkIn}
-                    onChange={(e) => setFormData({...formData, checkIn: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, checkIn: e.target.value })}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Check-out Date</label>
-                  <input 
-                    type="date" 
-                    required 
+                  <input
+                    type="date"
+                    required
                     className="w-full p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-ocean/50"
                     value={formData.checkOut}
-                    onChange={(e) => setFormData({...formData, checkOut: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, checkOut: e.target.value })}
                   />
                 </div>
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={isSubmitting}
                 className="btn-primary w-full py-4 text-lg mt-4 disabled:opacity-50"
               >
@@ -400,14 +401,14 @@ export default function HomePage() {
 
       {/* Interactive Location Map */}
       <section className="w-full h-96 min-h-[400px] relative">
-        <iframe 
+        <iframe
           title="Three Oaks Motel Location Map"
-          src="https://maps.google.com/maps?q=Three+Oaks+Motel,+Titusville&t=&z=15&ie=UTF8&iwloc=&output=embed" 
-          width="100%" 
-          height="100%" 
-          style={{ border: 0 }} 
-          allowFullScreen={true} 
-          loading="lazy" 
+          src="https://maps.google.com/maps?q=Three+Oaks+Motel,+Titusville&t=&z=15&ie=UTF8&iwloc=&output=embed"
+          width="100%"
+          height="100%"
+          style={{ border: 0 }}
+          allowFullScreen={true}
+          loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
           className="w-full h-full grayscale-[25%] hover:grayscale-0 transition-all duration-[1000ms]"
         ></iframe>
@@ -457,7 +458,7 @@ export default function HomePage() {
             </div>
             <h5 className="text-2xl font-display font-bold text-slate-900 mb-4">Reservation Request Received</h5>
             <p className="text-slate-600 mb-8">We will confirm your booking shortly. We look forward to seeing you!</p>
-            <button 
+            <button
               onClick={() => setShowSuccess(false)}
               className="btn-primary w-full"
             >
