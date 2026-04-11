@@ -35,32 +35,33 @@ export default function GalleryPage() {
           </button>
         </div>
 
-        {/* Mobile Menu Drawer - Premium Overlay */}
-        <div className={`fixed inset-0 z-[70] md:hidden transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${isMenuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'}`}>
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsMenuOpen(false)}></div>
-          <div className="relative ml-auto h-full w-[85%] max-w-sm bg-white shadow-2xl flex flex-col p-8 pt-8 gap-6 overflow-y-auto">
-            
-            {/* Explicit Close Button inside Drawer */}
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xs uppercase tracking-[0.3em] text-ocean font-bold">Portfolio</h2>
-              <button 
-                onClick={() => setIsMenuOpen(false)}
-                className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-ocean transition-all focus:outline-none bg-slate-50 rounded-full"
-                aria-label="Close Menu"
-              >
-                <i className="fas fa-times text-xl"></i>
-              </button>
-            </div>
+      </nav>
 
-            <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Home</Link>
-            <div className="mt-auto pt-8">
-              <a href="tel:3212676272" className="btn-primary w-full py-5 text-center text-xl flex items-center justify-center gap-3">
-                <i className="fas fa-phone-alt animate-pulse"></i> Call Now
-              </a>
-            </div>
+      {/* Mobile Menu Drawer - Premium Overlay */}
+      <div className={`fixed inset-0 z-[70] md:hidden transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${isMenuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'}`}>
+        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsMenuOpen(false)}></div>
+        <div className="relative ml-auto h-full w-[85%] max-w-sm bg-white shadow-2xl flex flex-col p-8 pt-8 gap-6 overflow-y-auto">
+          
+          {/* Explicit Close Button inside Drawer */}
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xs uppercase tracking-[0.3em] text-ocean font-bold">Portfolio</h2>
+            <button 
+              onClick={() => setIsMenuOpen(false)}
+              className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-ocean transition-all focus:outline-none bg-slate-50 rounded-full"
+              aria-label="Close Menu"
+            >
+              <i className="fas fa-times text-xl"></i>
+            </button>
+          </div>
+
+          <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Home</Link>
+          <div className="mt-auto pt-8">
+            <a href="tel:3212676272" className="btn-primary w-full py-5 text-center text-xl flex items-center justify-center gap-3">
+              <i className="fas fa-phone-alt animate-pulse"></i> Call Now
+            </a>
           </div>
         </div>
-      </nav>
+      </div>
 
       {/* Header */}
       <section className="pt-36 pb-16 px-8 max-w-7xl mx-auto text-center animate-fade-up">
