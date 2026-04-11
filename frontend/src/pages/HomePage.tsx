@@ -69,7 +69,9 @@ export default function HomePage() {
             <p className="text-[10px] tracking-[0.2em] text-ocean font-bold uppercase">Florida Coastal</p>
           </div>
         </div>
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-6 lg:gap-8">
+          <a href="#about" className="nav-link">About</a>
+          <a href="#amenities" className="nav-link hidden lg:block">Amenities</a>
           <a href="#rooms" className="nav-link">Rooms</a>
           <a href="#booking" className="nav-link">Book Now</a>
           <Link to="/gallery" className="nav-link font-bold text-ocean">Gallery</Link>
@@ -107,8 +109,48 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* About & Amenities Section */}
+      <section id="about" className="py-24 px-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+          {/* About */}
+          <div>
+            <h3 className="text-3xl font-display font-bold text-slate-900 mb-4">About Us</h3>
+            <div className="w-16 h-1 bg-ocean rounded-full mb-6" />
+            <p className="text-slate-600 leading-relaxed text-lg mb-4">
+              Welcome to the Three Oaks Motel, your premier Florida Coastal retreat. Perfectly positioned just minutes away from the legendary Kennedy Space Center, we offer a peaceful and comfortable stay for space enthusiasts, families, and beachgoers alike.
+            </p>
+            <p className="text-slate-600 leading-relaxed text-lg">
+              Experience authentic local hospitality with modern conveniences designed to make your mission a success. Whether you're here to catch a launch or enjoy the sun, we're ready to host you.
+            </p>
+          </div>
+          
+          {/* Amenities */}
+          <div id="amenities">
+            <h3 className="text-3xl font-display font-bold text-slate-900 mb-4">Property Amenities</h3>
+            <div className="w-16 h-1 bg-ocean rounded-full mb-6" />
+            <div className="grid grid-cols-2 gap-y-6 gap-x-8">
+              {[
+                { icon: "fa-wifi", text: "Free Fast WiFi" },
+                { icon: "fa-parking", text: "Free Parking" },
+                { icon: "fa-snowflake", text: "Air Conditioning" },
+                { icon: "fa-tv", text: "Cable TV" },
+                { icon: "fa-coffee", text: "Daily Coffee" },
+                { icon: "fa-rocket", text: "Near Space Center" }
+              ].map((amenity, idx) => (
+                <div key={idx} className="flex items-center gap-3 text-slate-700 hover:text-ocean transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-sky-light flex items-center justify-center text-ocean shadow-sm">
+                    <i className={`fas ${amenity.icon}`}></i>
+                  </div>
+                  <span className="font-medium text-sm md:text-base">{amenity.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Rooms Section */}
-      <section id="rooms" className="py-24 px-8 max-w-7xl mx-auto">
+      <section id="rooms" className="py-24 px-8 max-w-7xl mx-auto bg-slate-50/50 rounded-3xl mb-12">
         <div className="text-center mb-16">
           <h3 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">Our Rooms</h3>
           <div className="w-20 h-1 bg-ocean mx-auto rounded-full" />
@@ -121,19 +163,19 @@ export default function HomePage() {
               title: "One Queen",
               image: "./images/one-queen.jpg", // Reusing copied photos
               price: "Call for Rates",
-              features: ["1 Queen Bed", "Free High-Speed WiFi", "Individual AC", "Flat-Screen TV"]
+              desc: "A comfortable queen bed perfect for solo travelers or couples."
             },
             {
               title: "Two Queen",
               image: "./images/two-queen.jpg",
               price: "Call for Rates",
-              features: ["2 Queen Beds", "Ideal for Families", "Full Amenities", "Cable TV"]
+              desc: "Two spacious queen beds, ideal for families or small groups."
             },
             {
               title: "2 Double Bed",
               image: "./images/two-double.jpg", // Using fulls as King for variety
               price: "Call for Rates",
-              features: ["1 King Bed", "Premium Linens", "Spacious Layout", "Complimentary Coffee"]
+              desc: "Two full beds with a comfortable layout for your stay."
             }
           ].map((room, idx) => (
             <div key={idx} className="glass-card overflow-hidden hover:shadow-2xl transition-shadow duration-500 flex flex-col h-full">
@@ -145,14 +187,7 @@ export default function HomePage() {
               </div>
               <div className="p-8 flex-grow">
                 <h4 className="text-2xl font-display font-bold text-slate-800 mb-4">{room.title}</h4>
-                <ul className="space-y-3 mb-8">
-                  {room.features.map((feat, fIdx) => (
-                    <li key={fIdx} className="flex items-center text-slate-600 italic">
-                      <span className="w-2 h-2 bg-ocean rounded-full mr-3" />
-                      {feat}
-                    </li>
-                  ))}
-                </ul>
+                <p className="text-slate-600 mb-8 italic">{room.desc}</p>
               </div>
               <div className="p-8 pt-0 mt-auto">
                 <a href="#booking" className="btn-primary w-full text-center py-3">Book This Room</a>
