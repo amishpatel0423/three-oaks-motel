@@ -72,6 +72,7 @@ export default function HomePage() {
         <div className="hidden md:flex items-center gap-8">
           <a href="#rooms" className="nav-link">Rooms</a>
           <a href="#booking" className="nav-link">Book Now</a>
+          <Link to="/gallery" className="nav-link font-bold text-ocean">Gallery</Link>
           <a href="#contact" className="nav-link">Contact</a>
           <Link to="/admin" className="nav-link border-l pl-8 border-slate-200">
             <i className="fas fa-lock mr-2"></i>Admin
