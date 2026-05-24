@@ -37,9 +37,12 @@ export default function HomePage() {
 
   return (
     <div className={`min-h-screen bg-sun-white transition-opacity duration-1000 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
+      {/* Sticky header wrapper — keeps banner + nav together so they never overlap */}
+      <div className="sticky top-0 z-50">
+
       {/* Top Info Banner */}
-      <div className="w-full bg-ocean text-white text-xs md:text-sm py-2 px-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-center z-[60] relative">
-        <span className="flex items-center gap-1.5">
+      <div className="w-full bg-ocean text-white text-xs py-1.5 px-4 flex items-center justify-center gap-x-4 gap-y-0.5 text-center flex-wrap">
+        <span className="hidden sm:flex items-center gap-1.5">
           <i className="fas fa-map-marker-alt opacity-70"></i>
           707 S. Hopkins Ave, Titusville, FL 32780
         </span>
@@ -48,12 +51,12 @@ export default function HomePage() {
           <i className="fas fa-phone opacity-70"></i>
           (321) 267-6272
         </a>
-        <span className="hidden sm:block text-white/30">|</span>
+        <span className="text-white/30">|</span>
         <span className="flex items-center gap-1.5">
           <i className="fas fa-sign-in-alt opacity-70"></i>
           Check-in: 2:00 PM
         </span>
-        <span className="hidden sm:block text-white/30">|</span>
+        <span className="text-white/30">|</span>
         <span className="flex items-center gap-1.5">
           <i className="fas fa-sign-out-alt opacity-70"></i>
           Check-out: 11:00 AM
@@ -61,7 +64,7 @@ export default function HomePage() {
       </div>
 
       {/* Navigation */}
-      <nav className="fixed top-9 w-full z-50 glass-card rounded-none border-t-0 border-x-0 py-4 px-4 md:px-8 flex justify-between items-center">
+      <nav className="w-full glass-card rounded-none border-t-0 border-x-0 py-3 md:py-4 px-4 md:px-8 flex justify-between items-center">
         <Link to="/" className="flex items-center">
           <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Three Oaks Motel Logo" className="h-16 w-auto hover:scale-105 transition-transform duration-300" />
         </Link>
@@ -94,6 +97,7 @@ export default function HomePage() {
           </button>
         </div>
       </nav>
+      </div>{/* end sticky header */}
 
       {/* Mobile Menu Drawer - Higher Z-Index */}
       <div className={`fixed inset-0 z-[70] md:hidden transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${isMenuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'}`}>
@@ -131,7 +135,7 @@ export default function HomePage() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative h-[90vh] flex items-center justify-center overflow-hidden pt-9">
+      <section className="relative h-[90vh] flex items-center justify-center overflow-hidden">
         <div
           className="absolute inset-0 z-0 parallax-bg"
           style={{
@@ -149,18 +153,20 @@ export default function HomePage() {
             Comfortable, clean, and exactly 20 minutes from the Kennedy Space Center.
           </p>
           {/* Quick Date Search */}
-          <form onSubmit={handleHeroSearch} className="flex flex-col sm:flex-row gap-3 justify-center items-end bg-white/15 backdrop-blur-sm rounded-2xl p-4 max-w-xl mx-auto">
-            <div className="flex-1 text-left">
-              <label className="block text-xs font-bold text-white/70 uppercase tracking-wide mb-1">Check-in</label>
-              <input type="date" min={today} value={heroCheckIn} onChange={e => setHeroCheckIn(e.target.value)}
-                className="w-full p-2.5 rounded-lg bg-white text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-ocean/50 text-sm" />
+          <form onSubmit={handleHeroSearch} className="flex flex-col gap-2 bg-white/15 backdrop-blur-sm rounded-2xl p-4 max-w-sm mx-auto w-full">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="text-left">
+                <label className="block text-xs font-bold text-white/70 uppercase tracking-wide mb-1">Check-in</label>
+                <input type="date" min={today} value={heroCheckIn} onChange={e => setHeroCheckIn(e.target.value)}
+                  className="w-full p-2 rounded-lg bg-white text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-ocean/50 text-sm" />
+              </div>
+              <div className="text-left">
+                <label className="block text-xs font-bold text-white/70 uppercase tracking-wide mb-1">Check-out</label>
+                <input type="date" min={heroCheckIn || today} value={heroCheckOut} onChange={e => setHeroCheckOut(e.target.value)}
+                  className="w-full p-2 rounded-lg bg-white text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-ocean/50 text-sm" />
+              </div>
             </div>
-            <div className="flex-1 text-left">
-              <label className="block text-xs font-bold text-white/70 uppercase tracking-wide mb-1">Check-out</label>
-              <input type="date" min={heroCheckIn || today} value={heroCheckOut} onChange={e => setHeroCheckOut(e.target.value)}
-                className="w-full p-2.5 rounded-lg bg-white text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-ocean/50 text-sm" />
-            </div>
-            <button type="submit" className="btn-primary px-6 py-2.5 text-sm whitespace-nowrap">
+            <button type="submit" className="btn-primary w-full py-2.5 text-sm">
               Check Availability
             </button>
           </form>
