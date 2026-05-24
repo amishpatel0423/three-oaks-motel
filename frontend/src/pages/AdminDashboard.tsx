@@ -43,13 +43,21 @@ interface AvailableRoom {
   room_type: string;
 }
 
-type Tab = 'dashboard' | 'pricing';
+type Tab = 'dashboard' | 'occupancy' | 'pricing';
+
+const CATEGORY_ROOM_TYPES: Record<string, string[]> = {
+  'One King':     ['King', 'One Queen'],
+  'Two Queen':    ['2 Queen'],
+  '2 Double Bed': ['2 Full', 'One Full'],
+};
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState<Tab>('dashboard');
   const [rooms, setRooms] = useState<Room[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   // Room picker state (for manual assignment)
   const [pickingRoomFor, setPickingRoomFor] = useState<number | null>(null); // booking id
@@ -73,8 +81,9 @@ export default function AdminDashboard() {
         fetch(`${API}/api/bookings`),
       ]);
       setRooms(await roomsRes.json());
-      const allBookings: Booking[] = await bookingsRes.json();
-      setBookings(allBookings.filter(b => b.status === 'Pending'));
+      const fetched: Booking[] = await bookingsRes.json();
+      setAllBookings(fetched);
+      setBookings(fetched.filter(b => b.status === 'Pending'));
     } catch (error) {
       console.error('Dashboard sync error:', error);
     } finally {
@@ -208,14 +217,14 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-sky-light/30 font-body text-slate-800">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 py-4 px-8 sticky top-0 z-50 flex justify-between items-center shadow-sm">
+      <header className="bg-white border-b border-slate-200 py-3 px-4 md:py-4 md:px-8 sticky top-0 z-50 flex justify-between items-center flex-wrap gap-y-2 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 bg-ocean rounded-lg flex items-center justify-center text-white">
             <LayoutDashboard size={24} />
           </div>
           <div>
             <h1 className="text-xl font-display font-bold text-slate-900">Property Manager</h1>
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Three Oaks Motel Dashboard</p>
+            <p className="hidden sm:block text-xs text-slate-500 font-medium uppercase tracking-wider">Three Oaks Motel Dashboard</p>
           </div>
         </div>
 
@@ -236,13 +245,19 @@ export default function AdminDashboard() {
       </header>
 
       {/* Tab bar */}
-      <div className="bg-white border-b border-slate-200 px-8">
-        <div className="flex gap-1 max-w-7xl mx-auto">
+      <div className="bg-white border-b border-slate-200 px-4 md:px-8">
+        <div className="flex gap-1 max-w-7xl mx-auto overflow-x-auto">
           <button
             onClick={() => setTab('dashboard')}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${tab === 'dashboard' ? 'border-ocean text-ocean' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
           >
             <Calendar size={16} /> Bookings
+          </button>
+          <button
+            onClick={() => setTab('occupancy')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${tab === 'occupancy' ? 'border-ocean text-ocean' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+          >
+            <BedDouble size={16} /> Occupancy
           </button>
           <button
             onClick={() => setTab('pricing')}
@@ -253,11 +268,11 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto p-8">
+      <main className="max-w-7xl mx-auto p-4 md:p-8">
 
         {/* ── Dashboard Tab ──────────────────────────────────────────────── */}
         {tab === 'dashboard' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-8">
 
             {/* Room Status Board */}
             <section className="lg:col-span-4 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
@@ -265,7 +280,7 @@ export default function AdminDashboard() {
                 <AlertCircle size={20} className="text-ocean" />
                 <h2 className="text-lg font-display font-bold text-slate-900">Room Status</h2>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {rooms.map(room => (
                   <div key={room.id} className={`p-3 rounded-xl border transition-all duration-300 ${getStatusClasses(room.status)}`}>
                     <div className="flex justify-between items-start mb-1">
@@ -293,7 +308,7 @@ export default function AdminDashboard() {
                 </span>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left">
+                <table className="w-full text-left min-w-[580px]">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-100">
                       <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Guest</th>
@@ -406,6 +421,116 @@ export default function AdminDashboard() {
                 </table>
               </div>
             </section>
+          </div>
+        )}
+
+        {/* ── Occupancy Tab ──────────────────────────────────────────────── */}
+        {tab === 'occupancy' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-display font-bold text-slate-900">Room Occupancy</h2>
+              <p className="text-sm text-slate-500 mt-1">Click a category to see who is assigned.</p>
+            </div>
+
+            {/* Summary cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {CATEGORIES.map(cat => {
+                const totalRooms = rooms.filter(r => CATEGORY_ROOM_TYPES[cat]?.includes(r.room_type)).length;
+                const assignedBookings = allBookings.filter(b => b.status === 'Approved' && b.category === cat);
+                const assignedCount = assignedBookings.length;
+                const pct = totalRooms > 0 ? (assignedCount / totalRooms) * 100 : 0;
+                const isExpanded = expandedCategory === cat;
+                const barColor = pct >= 80 ? 'bg-amber-400' : pct >= 50 ? 'bg-ocean' : 'bg-green-500';
+                const cardBorder = isExpanded ? 'border-ocean shadow-md' : 'border-slate-200 hover:border-ocean/40';
+
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setExpandedCategory(isExpanded ? null : cat)}
+                    className={`text-left bg-white rounded-2xl border-2 p-6 transition-all duration-200 ${cardBorder}`}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Room Category</p>
+                        <h3 className="text-lg font-display font-bold text-slate-900">{cat}</h3>
+                      </div>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isExpanded ? 'bg-ocean text-white' : 'bg-ocean/10 text-ocean'}`}>
+                        <BedDouble size={20} />
+                      </div>
+                    </div>
+
+                    <div className="flex items-end gap-1 mb-3">
+                      <span className="text-3xl font-display font-black text-slate-900">{assignedCount}</span>
+                      <span className="text-sm text-slate-400 font-medium mb-1">/ {totalRooms} assigned</span>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="w-full bg-slate-100 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-500 ${barColor}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">{totalRooms - assignedCount} rooms free</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Detail panel */}
+            {expandedCategory && (() => {
+              const assigned = allBookings
+                .filter(b => b.status === 'Approved' && b.category === expandedCategory)
+                .sort((a, b) => a.check_in_date.localeCompare(b.check_in_date));
+
+              return (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="p-5 border-b border-slate-100 flex items-center gap-2">
+                    <BedDouble size={18} className="text-ocean" />
+                    <h3 className="font-display font-bold text-slate-900">{expandedCategory} — Assigned Bookings</h3>
+                    <span className="ml-auto text-xs font-bold text-ocean bg-ocean/10 px-2.5 py-1 rounded-full">{assigned.length} booking{assigned.length !== 1 ? 's' : ''}</span>
+                  </div>
+
+                  {assigned.length === 0 ? (
+                    <div className="py-14 text-center text-slate-400 text-sm italic">No rooms currently assigned in this category.</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left min-w-[600px]">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-100">
+                            <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Room #</th>
+                            <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Guest</th>
+                            <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Email</th>
+                            <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Check-in</th>
+                            <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Check-out</th>
+                            <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                          {assigned.map(b => (
+                            <tr key={b.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="p-4">
+                                <span className="text-lg font-display font-black text-ocean">{b.assigned_room_number ?? '—'}</span>
+                              </td>
+                              <td className="p-4">
+                                <div className="font-bold text-slate-900">{b.guest_name}</div>
+                                <div className="text-xs text-slate-400">{b.phone}</div>
+                              </td>
+                              <td className="p-4 text-sm text-slate-600">{b.email}</td>
+                              <td className="p-4 text-sm font-medium text-slate-700">{b.check_in_date}</td>
+                              <td className="p-4 text-sm font-medium text-slate-700">{b.check_out_date}</td>
+                              <td className="p-4 text-sm font-bold text-slate-800">
+                                {b.total_price != null ? `$${b.total_price.toFixed(2)}` : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 

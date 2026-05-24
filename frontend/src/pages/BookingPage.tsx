@@ -168,7 +168,7 @@ export default function BookingPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-10">
 
         {/* ── Date Picker Bar ─────────────────────────────────────────────── */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">

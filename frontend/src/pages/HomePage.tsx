@@ -61,7 +61,7 @@ export default function HomePage() {
       </div>
 
       {/* Navigation */}
-      <nav className="fixed top-9 w-full z-50 glass-card rounded-none border-t-0 border-x-0 py-4 px-8 flex justify-between items-center">
+      <nav className="fixed top-9 w-full z-50 glass-card rounded-none border-t-0 border-x-0 py-4 px-4 md:px-8 flex justify-between items-center">
         <Link to="/" className="flex items-center">
           <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Three Oaks Motel Logo" className="h-16 w-auto hover:scale-105 transition-transform duration-300" />
         </Link>
@@ -168,7 +168,7 @@ export default function HomePage() {
       </section>
 
       {/* About & Amenities Section */}
-      <section id="about" className="py-24 px-8 max-w-7xl mx-auto">
+      <section id="about" className="py-12 px-4 md:py-24 md:px-8 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
           {/* About */}
           <div>
@@ -218,7 +218,7 @@ export default function HomePage() {
       </section>
 
       {/* Rooms Section */}
-      <section id="rooms" className="py-24 px-8 max-w-7xl mx-auto bg-slate-50/50 rounded-3xl mb-12">
+      <section id="rooms" className="py-12 px-4 md:py-24 md:px-8 max-w-7xl mx-auto bg-slate-50/50 rounded-3xl mb-12">
         <div className="text-center mb-16">
           <h3 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">Our Rooms</h3>
           <div className="w-20 h-1 bg-ocean mx-auto rounded-full" />
@@ -274,7 +274,7 @@ export default function HomePage() {
 
       {/* High Ratings / Testimonials Section */}
       <section className="py-16 bg-white border-y border-slate-100 mb-16">
-        <div className="max-w-7xl mx-auto px-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="flex flex-col items-center justify-center text-center mb-12">
             <div className="flex gap-2 text-amber-400 text-xl md:text-2xl mb-4">
               <i className="fas fa-star"></i>
@@ -309,7 +309,7 @@ export default function HomePage() {
 
       {/* Book Now CTA Section */}
       <section id="booking" className="py-24 bg-sky-light/50">
-        <div className="max-w-4xl mx-auto px-8">
+        <div className="max-w-4xl mx-auto px-4 md:px-8">
           <div className="glass-card p-8 md:p-12 text-center">
             <h3 className="text-3xl font-display font-bold text-slate-900 mb-2">Plan Your Stay</h3>
             <p className="text-slate-600 mb-8">Check live availability and pricing — then book in seconds.</p>
@@ -347,7 +347,7 @@ export default function HomePage() {
       </section>
 
       {/* Interactive Location Map */}
-      <section className="w-full h-96 min-h-[400px] relative">
+      <section className="w-full h-56 md:h-96 relative">
         <iframe
           title="Three Oaks Motel Location Map"
           src="https://maps.google.com/maps?q=Three+Oaks+Motel,+Titusville&t=&z=15&ie=UTF8&iwloc=&output=embed"
@@ -362,8 +362,8 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer id="contact" className="bg-slate-900 text-white py-20 px-8">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+      <footer id="contact" className="bg-slate-900 text-white py-10 px-4 md:py-20 md:px-8">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
           <div>
             <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Three Oaks Motel Logo" className="h-12 w-auto mb-6 brightness-0 invert opacity-80" />
             <p className="text-slate-400 font-light leading-relaxed">

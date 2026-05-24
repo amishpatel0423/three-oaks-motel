@@ -14,7 +14,7 @@ export default function GalleryPage() {
   return (
     <div className={`min-h-screen bg-sky-light/30 transition-opacity duration-1000 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 py-4 px-8 flex justify-between items-center shadow-sm">
+      <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 py-4 px-4 md:px-8 flex justify-between items-center shadow-sm">
         <Link to="/" className="flex items-center">
           <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Three Oaks Motel Logo" className="h-14 w-auto drop-shadow-sm hover:scale-105 transition-transform duration-300" />
         </Link>
@@ -64,7 +64,7 @@ export default function GalleryPage() {
       </div>
 
       {/* Header */}
-      <section className="pt-36 pb-16 px-8 max-w-7xl mx-auto text-center animate-fade-up">
+      <section className="pt-24 pb-8 px-4 md:pt-36 md:pb-16 md:px-8 max-w-7xl mx-auto text-center animate-fade-up">
         <h2 className="text-4xl md:text-5xl font-display font-bold text-slate-900 mb-6 drop-shadow-sm">Photo Gallery</h2>
         <div className="w-24 h-1.5 bg-gradient-to-r from-ocean to-cyan-400 mx-auto rounded-full mb-6 shadow-sm" />
         <p className="text-slate-600 text-lg font-light">Explore our facilities perfectly situated for your Space Coast mission.</p>
@@ -90,7 +90,7 @@ export default function GalleryPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-white py-12 px-8 text-center text-slate-500 text-sm">
+      <footer className="bg-slate-900 text-white py-8 px-4 md:py-12 md:px-8 text-center text-slate-500 text-sm">
         &copy; {new Date().getFullYear()} Three Oaks Motel. All Rights Reserved.
       </footer>
     </div>
