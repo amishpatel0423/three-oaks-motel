@@ -1,20 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const [loaded, setLoaded] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    checkIn: '',
-    checkOut: '',
-    roomType: 'One King'
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [scrollPos, setScrollPos] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const [heroCheckIn, setHeroCheckIn] = useState(today);
+  const [heroCheckOut, setHeroCheckOut] = useState(tomorrow);
 
   useEffect(() => {
     setLoaded(true);
@@ -35,36 +30,9 @@ export default function HomePage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleHeroSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (new Date(formData.checkOut) <= new Date(formData.checkIn)) {
-      alert("Check-out date must be after check-in date.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const response = await fetch('http://localhost:8000/api/bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          guest_name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          room_preference: formData.roomType,
-          check_in_date: formData.checkIn,
-          check_out_date: formData.checkOut
-        }),
-      });
-      if (response.ok) {
-        setShowSuccess(true);
-        setFormData({ name: '', email: '', phone: '', checkIn: '', checkOut: '', roomType: 'One King' });
-      }
-    } catch (error) {
-      console.error("Booking error:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    navigate(`/booking?check_in=${heroCheckIn}&check_out=${heroCheckOut}`);
   };
 
   return (
@@ -180,9 +148,22 @@ export default function HomePage() {
           <p className="text-xl md:text-2xl font-light mb-10 drop-shadow-md">
             Comfortable, clean, and exactly 20 minutes from the Kennedy Space Center.
           </p>
-          <a href="#booking" onClick={(e) => handleNavClick(e, 'booking')} className="btn-primary text-lg px-12 py-4">
-            Book Your Stay
-          </a>
+          {/* Quick Date Search */}
+          <form onSubmit={handleHeroSearch} className="flex flex-col sm:flex-row gap-3 justify-center items-end bg-white/15 backdrop-blur-sm rounded-2xl p-4 max-w-xl mx-auto">
+            <div className="flex-1 text-left">
+              <label className="block text-xs font-bold text-white/70 uppercase tracking-wide mb-1">Check-in</label>
+              <input type="date" min={today} value={heroCheckIn} onChange={e => setHeroCheckIn(e.target.value)}
+                className="w-full p-2.5 rounded-lg bg-white text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-ocean/50 text-sm" />
+            </div>
+            <div className="flex-1 text-left">
+              <label className="block text-xs font-bold text-white/70 uppercase tracking-wide mb-1">Check-out</label>
+              <input type="date" min={heroCheckIn || today} value={heroCheckOut} onChange={e => setHeroCheckOut(e.target.value)}
+                className="w-full p-2.5 rounded-lg bg-white text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-ocean/50 text-sm" />
+            </div>
+            <button type="submit" className="btn-primary px-6 py-2.5 text-sm whitespace-nowrap">
+              Check Availability
+            </button>
+          </form>
         </div>
       </section>
 
@@ -284,7 +265,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="p-8 pt-0 mt-auto">
-                <a href="#booking" onClick={(e) => handleNavClick(e, 'booking')} className="btn-primary w-full text-center py-3">Book This Room</a>
+                <Link to="/booking" className="btn-primary w-full text-center py-3 block">Book This Room</Link>
               </div>
             </div>
           ))}
@@ -326,123 +307,41 @@ export default function HomePage() {
       </section>
 
 
-      {/* Booking Form Section */}
+      {/* Book Now CTA Section */}
       <section id="booking" className="py-24 bg-sky-light/50">
         <div className="max-w-4xl mx-auto px-8">
-          <div className="glass-card p-8 md:p-12">
-            <div className="text-center mb-10">
-              <h3 className="text-3xl font-display font-bold text-slate-900 mb-2">Plan Your Stay</h3>
-              <p className="text-slate-600">Reserve your room just minutes from the launches.</p>
-            </div>
+          <div className="glass-card p-8 md:p-12 text-center">
+            <h3 className="text-3xl font-display font-bold text-slate-900 mb-2">Plan Your Stay</h3>
+            <p className="text-slate-600 mb-8">Check live availability and pricing — then book in seconds.</p>
 
             {/* Policy Info */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
               <div className="flex items-center gap-3 bg-sky-light/60 rounded-xl p-4">
                 <i className="fas fa-sign-in-alt text-ocean text-lg"></i>
-                <div>
+                <div className="text-left">
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Check-in</p>
                   <p className="text-sm font-semibold text-slate-800">From 2:00 PM</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-sky-light/60 rounded-xl p-4">
                 <i className="fas fa-sign-out-alt text-ocean text-lg"></i>
-                <div>
+                <div className="text-left">
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Check-out</p>
                   <p className="text-sm font-semibold text-slate-800">By 11:00 AM</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-amber-50 rounded-xl p-4 border border-amber-100">
                 <i className="fas fa-credit-card text-amber-500 text-lg"></i>
-                <div>
+                <div className="text-left">
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Deposit</p>
                   <p className="text-sm font-semibold text-slate-800">Required at check-in</p>
                 </div>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Guest Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="John Doe"
-                    className="w-full p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-ocean/50"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="john@example.com"
-                    className="w-full p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-ocean/50"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Phone Number</label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="(321) 555-0000"
-                    className="w-full p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-ocean/50"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Room Preference</label>
-                  <select
-                    className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-ocean/50"
-                    value={formData.roomType}
-                    onChange={(e) => setFormData({ ...formData, roomType: e.target.value })}
-                  >
-                    <option>One King</option>
-                    <option>Two Queen</option>
-                    <option>2 Double Bed</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Check-in Date</label>
-                  <input
-                    type="date"
-                    required
-                    className="w-full p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-ocean/50"
-                    value={formData.checkIn}
-                    onChange={(e) => setFormData({ ...formData, checkIn: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Check-out Date</label>
-                  <input
-                    type="date"
-                    required
-                    className="w-full p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-ocean/50"
-                    value={formData.checkOut}
-                    onChange={(e) => setFormData({ ...formData, checkOut: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="btn-primary w-full py-4 text-lg mt-4 disabled:opacity-50"
-              >
-                {isSubmitting ? "Processing..." : "Submit Booking Request"}
-              </button>
-            </form>
+            <Link to="/booking" className="btn-primary text-lg px-12 py-4 inline-block">
+              Check Availability &amp; Book
+            </Link>
           </div>
         </div>
       </section>
@@ -497,24 +396,6 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {/* Success Modal */}
-      {showSuccess && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl animate-fade-in">
-            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
-              <i className="fas fa-check"></i>
-            </div>
-            <h5 className="text-2xl font-display font-bold text-slate-900 mb-4">Reservation Request Received</h5>
-            <p className="text-slate-600 mb-8">We will confirm your booking shortly. We look forward to seeing you!</p>
-            <button
-              onClick={() => setShowSuccess(false)}
-              className="btn-primary w-full"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
