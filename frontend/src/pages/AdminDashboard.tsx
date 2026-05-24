@@ -46,7 +46,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   // Pricing state
-  const [rates, setRates] = useState<CategoryRate[]>([]);
+  const [, setRates] = useState<CategoryRate[]>([]);
   const [editRates, setEditRates] = useState<Record<string, string>>({});
   const [overrides, setOverrides] = useState<PriceOverride[]>([]);
   const [newOverride, setNewOverride] = useState({ category: 'One King', date: '', price: '' });
