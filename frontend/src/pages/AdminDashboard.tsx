@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, Check, X, LayoutDashboard, Calendar, RefreshCw, AlertCircle, DollarSign, Trash2, Plus } from 'lucide-react';
+import { Home, Check, X, LayoutDashboard, Calendar, RefreshCw, AlertCircle, DollarSign, Trash2, Plus, BedDouble } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const API = 'http://localhost:8000';
@@ -37,6 +37,12 @@ interface PriceOverride {
   price: number;
 }
 
+interface AvailableRoom {
+  id: number;
+  room_number: string;
+  room_type: string;
+}
+
 type Tab = 'dashboard' | 'pricing';
 
 export default function AdminDashboard() {
@@ -44,6 +50,12 @@ export default function AdminDashboard() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Room picker state (for manual assignment)
+  const [pickingRoomFor, setPickingRoomFor] = useState<number | null>(null); // booking id
+  const [availableRooms, setAvailableRooms] = useState<AvailableRoom[]>([]);
+  const [selectedRoom, setSelectedRoom] = useState<string>('');
+  const [roomPickerLoading, setRoomPickerLoading] = useState(false);
 
   // Pricing state
   const [, setRates] = useState<CategoryRate[]>([]);
@@ -93,13 +105,33 @@ export default function AdminDashboard() {
     fetchPricing();
   }, []);
 
+  const openRoomPicker = async (booking: Booking) => {
+    setPickingRoomFor(booking.id);
+    setSelectedRoom('');
+    setRoomPickerLoading(true);
+    try {
+      const res = await fetch(`${API}/api/bookings/${booking.id}/available-rooms`);
+      const data: AvailableRoom[] = await res.json();
+      setAvailableRooms(data);
+      if (data.length > 0) setSelectedRoom(data[0].room_number);
+    } catch (e) { console.error(e); }
+    finally { setRoomPickerLoading(false); }
+  };
+
   const handleApprove = async (id: number) => {
     try {
-      const res = await fetch(`${API}/api/bookings/${id}/approve`, { method: 'PATCH' });
-      if (res.ok) fetchData();
-      else {
+      const body = selectedRoom ? JSON.stringify({ room_number: selectedRoom }) : '{}';
+      const res = await fetch(`${API}/api/bookings/${id}/approve`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      });
+      if (res.ok) {
+        setPickingRoomFor(null);
+        fetchData();
+      } else {
         const err = await res.json();
-        alert(err.detail || 'Approval failed.');
+        alert(err.error || 'Approval failed.');
       }
     } catch (e) { console.error(e); }
   };
@@ -273,6 +305,7 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {bookings.map(b => (
+                      <>
                       <tr key={b.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="p-4">
                           <div className="font-bold text-slate-900">{b.guest_name}</div>
@@ -296,11 +329,12 @@ export default function AdminDashboard() {
                         <td className="p-4 text-right">
                           <div className="flex justify-end gap-2">
                             <button
-                              onClick={() => handleApprove(b.id)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors border border-transparent hover:border-green-100"
-                              title="Approve"
+                              onClick={() => pickingRoomFor === b.id ? setPickingRoomFor(null) : openRoomPicker(b)}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${pickingRoomFor === b.id ? 'bg-ocean text-white border-ocean' : 'text-green-600 hover:bg-green-50 border-transparent hover:border-green-100'}`}
+                              title="Assign Room & Approve"
                             >
-                              <Check size={20} />
+                              <BedDouble size={15} />
+                              Assign
                             </button>
                             <button
                               onClick={() => handleReject(b.id)}
@@ -312,6 +346,51 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                       </tr>
+
+                      {/* Room picker row */}
+                      {pickingRoomFor === b.id && (
+                        <tr key={`picker-${b.id}`} className="bg-ocean/5 border-b border-ocean/10">
+                          <td colSpan={5} className="px-4 py-3">
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <BedDouble size={16} className="text-ocean flex-shrink-0" />
+                              <span className="text-sm font-semibold text-slate-700">Assign room for {b.guest_name}:</span>
+                              {roomPickerLoading ? (
+                                <span className="text-sm text-slate-400 italic">Loading rooms…</span>
+                              ) : availableRooms.length === 0 ? (
+                                <span className="text-sm text-red-500 font-medium">No available rooms for these dates.</span>
+                              ) : (
+                                <>
+                                  <select
+                                    value={selectedRoom}
+                                    onChange={e => setSelectedRoom(e.target.value)}
+                                    className="p-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-ocean/40"
+                                  >
+                                    {availableRooms.map(r => (
+                                      <option key={r.id} value={r.room_number}>
+                                        Room {r.room_number} — {r.room_type}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    onClick={() => handleApprove(b.id)}
+                                    className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                                  >
+                                    <Check size={15} /> Confirm
+                                  </button>
+                                </>
+                              )}
+                              <button
+                                onClick={() => setPickingRoomFor(null)}
+                                className="ml-auto text-slate-400 hover:text-slate-600 transition-colors"
+                                title="Cancel"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      </>
                     ))}
                     {bookings.length === 0 && !loading && (
                       <tr>

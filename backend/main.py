@@ -212,20 +212,51 @@ def get_rooms():
     return jsonify([dict(r) for r in rows])
 
 
+@app.get("/api/bookings/<int:bid>/available-rooms")
+def get_available_rooms_for_booking(bid):
+    con = get_con()
+    b   = con.execute("SELECT * FROM bookings WHERE id=?", (bid,)).fetchone()
+    if not b:
+        con.close()
+        return jsonify({"error": "Not found"}), 404
+    rooms = available_rooms(b["category"], b["check_in_date"], b["check_out_date"])
+    con.close()
+    return jsonify([{"id": r["id"], "room_number": r["room_number"], "room_type": r["room_type"]} for r in rooms])
+
+
 @app.patch("/api/bookings/<int:bid>/approve")
 def approve_booking(bid):
+    data       = request.get_json(silent=True) or {}
+    room_number = data.get("room_number")
     con = get_con()
     b   = con.execute("SELECT * FROM bookings WHERE id=?", (bid,)).fetchone()
     if not b:
         con.close()
         return jsonify({"error": "Not found"}), 404
 
-    rooms = available_rooms(b["category"], b["check_in_date"], b["check_out_date"])
-    if not rooms:
-        con.close()
-        return jsonify({"error": "No available rooms for this category and dates"}), 400
+    if room_number:
+        # Admin manually picked a room — verify it's available
+        room_row = con.execute("SELECT * FROM rooms WHERE room_number=?", (room_number,)).fetchone()
+        if not room_row:
+            con.close()
+            return jsonify({"error": f"Room {room_number} not found"}), 404
+        overlap = con.execute("""
+            SELECT 1 FROM bookings
+            WHERE assigned_room_id=? AND status='Approved'
+              AND check_in_date < ? AND check_out_date > ?
+        """, (room_row["id"], b["check_out_date"], b["check_in_date"])).fetchone()
+        if overlap:
+            con.close()
+            return jsonify({"error": f"Room {room_number} is not available for those dates"}), 400
+        room = dict(room_row)
+    else:
+        # Auto-assign first available
+        rooms = available_rooms(b["category"], b["check_in_date"], b["check_out_date"])
+        if not rooms:
+            con.close()
+            return jsonify({"error": "No available rooms for this category and dates"}), 400
+        room = rooms[0]
 
-    room = rooms[0]
     con.execute(
         "UPDATE bookings SET status='Approved', assigned_room_id=? WHERE id=?",
         (room["id"], bid)
