@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { galleryImages } from '../data/galleryAssets';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -10,6 +11,32 @@ export default function HomePage() {
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
   const [heroCheckIn, setHeroCheckIn] = useState(today);
   const [heroCheckOut, setHeroCheckOut] = useState(tomorrow);
+
+  // Gallery carousel state
+  const [galleryIdx, setGalleryIdx] = useState(0);
+  const galleryPaused = useRef(false);
+  const [visibleCount, setVisibleCount] = useState(4);
+
+  useEffect(() => {
+    const getVisible = () => {
+      if (window.innerWidth < 640) return 1;
+      if (window.innerWidth < 1024) return 2;
+      return 4;
+    };
+    setVisibleCount(getVisible());
+    const onResize = () => setVisibleCount(getVisible());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (!galleryPaused.current) {
+        setGalleryIdx(i => (i + 1) % galleryImages.length);
+      }
+    }, 3500);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     setLoaded(true);
@@ -73,7 +100,7 @@ export default function HomePage() {
           <a href="#amenities" onClick={(e) => handleNavClick(e, 'amenities')} className="nav-link hidden lg:block">Amenities</a>
           <a href="#rooms" onClick={(e) => handleNavClick(e, 'rooms')} className="nav-link">Rooms</a>
           <a href="#booking" onClick={(e) => handleNavClick(e, 'booking')} className="nav-link">Book Now</a>
-          <Link to="/gallery" className="nav-link font-bold text-ocean">Gallery</Link>
+          <a href="#gallery" onClick={(e) => handleNavClick(e, 'gallery')} className="nav-link font-bold text-ocean">Gallery</a>
           <a href="#contact" onClick={(e) => handleNavClick(e, 'contact')} className="nav-link">Contact</a>
           <Link to="/admin" className="nav-link border-l pl-8 border-slate-200">
             <i className="fas fa-lock mr-2"></i>Admin
@@ -120,9 +147,9 @@ export default function HomePage() {
           <a href="#amenities" onClick={(e) => handleNavClick(e, 'amenities')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Amenities</a>
           <a href="#rooms" onClick={(e) => handleNavClick(e, 'rooms')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Guest Rooms</a>
           <a href="#booking" onClick={(e) => handleNavClick(e, 'booking')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Book Now</a>
-          <Link to="/gallery" onClick={() => setIsMenuOpen(false)} className="text-2xl font-display font-medium text-ocean border-b border-slate-100 pb-4 tracking-tight flex items-center justify-between">
+          <a href="#gallery" onClick={(e) => handleNavClick(e, 'gallery')} className="text-2xl font-display font-medium text-ocean border-b border-slate-100 pb-4 tracking-tight flex items-center justify-between">
             Photo Gallery <i className="fas fa-chevron-right text-sm opacity-30"></i>
-          </Link>
+          </a>
           <a href="#contact" onClick={(e) => handleNavClick(e, 'contact')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Contact</a>
 
           <div className="mt-auto pt-8">
@@ -312,6 +339,78 @@ export default function HomePage() {
         </div>
       </section>
 
+
+      {/* Photo Gallery Carousel */}
+      <section id="gallery" className="py-16 bg-slate-50/50">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <div className="text-center mb-10">
+            <h3 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">Photo Gallery</h3>
+            <div className="w-20 h-1 bg-ocean mx-auto rounded-full" />
+            <p className="mt-4 text-slate-600">A look inside Three Oaks Motel.</p>
+          </div>
+
+          <div
+            className="relative"
+            onMouseEnter={() => { galleryPaused.current = true; }}
+            onMouseLeave={() => { galleryPaused.current = false; }}
+          >
+            {/* Prev arrow */}
+            <button
+              onClick={() => setGalleryIdx(i => (i - 1 + galleryImages.length) % galleryImages.length)}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 md:-translate-x-5 z-10 w-9 h-9 md:w-11 md:h-11 bg-white shadow-lg rounded-full flex items-center justify-center text-ocean hover:bg-ocean hover:text-white transition-colors"
+              aria-label="Previous"
+            >
+              <i className="fas fa-chevron-left text-sm"></i>
+            </button>
+
+            {/* Next arrow */}
+            <button
+              onClick={() => setGalleryIdx(i => (i + 1) % galleryImages.length)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 md:translate-x-5 z-10 w-9 h-9 md:w-11 md:h-11 bg-white shadow-lg rounded-full flex items-center justify-center text-ocean hover:bg-ocean hover:text-white transition-colors"
+              aria-label="Next"
+            >
+              <i className="fas fa-chevron-right text-sm"></i>
+            </button>
+
+            {/* Track */}
+            <div className="overflow-hidden rounded-2xl">
+              <div
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${galleryIdx * (100 / galleryImages.length)}%)` }}
+              >
+                {galleryImages.map((img, i) => (
+                  <div
+                    key={i}
+                    style={{ width: `${100 / visibleCount}%`, flexShrink: 0 }}
+                    className="px-1"
+                  >
+                    <div className="overflow-hidden rounded-xl aspect-[4/3] group/img">
+                      <img
+                        src={`${import.meta.env.BASE_URL}images/gallery/${img}`}
+                        alt={`Three Oaks Motel photo ${i + 1}`}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Dot indicators */}
+            <div className="flex justify-center gap-1.5 mt-5">
+              {galleryImages.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setGalleryIdx(i)}
+                  className={`rounded-full transition-all duration-300 ${i === galleryIdx ? 'w-6 h-2 bg-ocean' : 'w-2 h-2 bg-slate-300 hover:bg-ocean/50'}`}
+                  aria-label={`Go to photo ${i + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Book Now CTA Section */}
       <section id="booking" className="py-24 bg-sky-light/50">
