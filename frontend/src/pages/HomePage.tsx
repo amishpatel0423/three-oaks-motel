@@ -69,8 +69,31 @@ export default function HomePage() {
 
   return (
     <div className={`min-h-screen bg-sun-white transition-opacity duration-1000 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
+      {/* Top Info Banner */}
+      <div className="w-full bg-ocean text-white text-xs md:text-sm py-2 px-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-center z-[60] relative">
+        <span className="flex items-center gap-1.5">
+          <i className="fas fa-map-marker-alt opacity-70"></i>
+          707 S. Hopkins Ave, Titusville, FL 32780
+        </span>
+        <span className="hidden sm:block text-white/30">|</span>
+        <a href="tel:3212676272" className="flex items-center gap-1.5 hover:text-white/80 transition-colors">
+          <i className="fas fa-phone opacity-70"></i>
+          (321) 267-6272
+        </a>
+        <span className="hidden sm:block text-white/30">|</span>
+        <span className="flex items-center gap-1.5">
+          <i className="fas fa-sign-in-alt opacity-70"></i>
+          Check-in: 2:00 PM
+        </span>
+        <span className="hidden sm:block text-white/30">|</span>
+        <span className="flex items-center gap-1.5">
+          <i className="fas fa-sign-out-alt opacity-70"></i>
+          Check-out: 11:00 AM
+        </span>
+      </div>
+
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 glass-card rounded-none border-t-0 border-x-0 py-4 px-8 flex justify-between items-center">
+      <nav className="fixed top-9 w-full z-50 glass-card rounded-none border-t-0 border-x-0 py-4 px-8 flex justify-between items-center">
         <Link to="/" className="flex items-center">
           <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Three Oaks Motel Logo" className="h-16 w-auto hover:scale-105 transition-transform duration-300" />
         </Link>
@@ -140,7 +163,7 @@ export default function HomePage() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative h-[90vh] flex items-center justify-center overflow-hidden">
+      <section className="relative h-[90vh] flex items-center justify-center overflow-hidden pt-9">
         <div
           className="absolute inset-0 z-0 parallax-bg"
           style={{
@@ -253,7 +276,7 @@ export default function HomePage() {
                 <h4 className="text-2xl font-display font-bold text-slate-800 mb-4">{room.title}</h4>
                 <p className="text-slate-600 mb-6 italic">{room.desc}</p>
                 <div className="flex flex-wrap gap-2">
-                  {["Private bathroom", "Microwave", "Refrigerator", "Cable channels", "Internet", "Linens", "Dining area"].map((item, i) => (
+                  {["Private bathroom", "Microwave", "Refrigerator", "Cable channels", "Internet", "Linens"].map((item, i) => (
                     <span key={i} className="text-[11px] uppercase tracking-wide font-bold px-2 py-1 bg-sky-light/50 text-ocean rounded block">
                       {item}
                     </span>
@@ -310,6 +333,31 @@ export default function HomePage() {
             <div className="text-center mb-10">
               <h3 className="text-3xl font-display font-bold text-slate-900 mb-2">Plan Your Stay</h3>
               <p className="text-slate-600">Reserve your room just minutes from the launches.</p>
+            </div>
+
+            {/* Policy Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              <div className="flex items-center gap-3 bg-sky-light/60 rounded-xl p-4">
+                <i className="fas fa-sign-in-alt text-ocean text-lg"></i>
+                <div>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Check-in</p>
+                  <p className="text-sm font-semibold text-slate-800">From 2:00 PM</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-sky-light/60 rounded-xl p-4">
+                <i className="fas fa-sign-out-alt text-ocean text-lg"></i>
+                <div>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Check-out</p>
+                  <p className="text-sm font-semibold text-slate-800">By 11:00 AM</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-amber-50 rounded-xl p-4 border border-amber-100">
+                <i className="fas fa-credit-card text-amber-500 text-lg"></i>
+                <div>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Deposit</p>
+                  <p className="text-sm font-semibold text-slate-800">Required at check-in</p>
+                </div>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
