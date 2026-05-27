@@ -567,11 +567,29 @@ def get_reviews():
         return jsonify({"error": str(e)}), 500
 
 
+# ── Health check ─────────────────────────────────────────────────────────────
+
+@app.get("/")
+@app.get("/health")
+def health():
+    if not DATABASE_URL:
+        return jsonify({"status": "error", "message": "DATABASE_URL not set"}), 500
+    try:
+        con = get_con()
+        con.close()
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 # ── Start ─────────────────────────────────────────────────────────────────────
 
 # Run setup on startup (gunicorn workers will each call this — safe due to IF NOT EXISTS)
 if DATABASE_URL:
-    setup_db()
+    try:
+        setup_db()
+    except Exception as e:
+        print(f"WARNING: setup_db() failed: {e}")
 
 if __name__ == "__main__":
     if not DATABASE_URL:
