@@ -310,7 +310,7 @@ export default function HomePage() {
             )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {reviews.length > 0 ? reviews.slice(0, 3).map((r, i) => (
+            {reviews.filter(r => r.rating === 5).length > 0 ? reviews.filter(r => r.rating === 5).slice(0, 3).map((r, i) => (
               <div key={i} className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
                 <div className="flex gap-0.5 text-amber-400 mb-3">
                   {Array.from({ length: r.rating }).map((_, s) => (
