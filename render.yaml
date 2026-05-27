@@ -1,3 +1,9 @@
+databases:
+  - name: three-oaks-motel-db
+    databaseName: motel
+    user: motel
+    plan: free
+
 services:
   - type: web
     name: three-oaks-motel-api
@@ -7,14 +13,11 @@ services:
     startCommand: gunicorn main:app --bind 0.0.0.0:$PORT
     plan: free
     envVars:
-      - key: DB_PATH
-        value: /data/motel.db
+      - key: DATABASE_URL
+        fromDatabase:
+          name: three-oaks-motel-db
+          property: connectionString
       - key: GOOGLE_API_KEY
         value: AIzaSyBy7FZLlpJ0HrcIipvP9vYOlmAVA0HFxDk
       - key: PYTHON_VERSION
         value: 3.11.0
-
-disks:
-  - name: motel-db
-    mountPath: /data
-    sizeGB: 1
