@@ -17,7 +17,7 @@ PLACE_ID            = "ChIJxaHg5TKz4IgR-o2Bu-pnfhc"
 REVIEWS_CACHE_HOURS = 24
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False)
 
 CATEGORY_MAP = {
     "One King":     ["King", "One Queen"],
