@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Home, Check, X, LayoutDashboard, Calendar, RefreshCw, DollarSign, BedDouble, CalendarDays, ChevronLeft, ChevronRight, Save } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API = import.meta.env.VITE_API_URL || 'https://three-oaks-motel-api.onrender.com';
 
 interface Booking {
   id: number;

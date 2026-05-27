@@ -22,7 +22,7 @@ export default function HomePage() {
 
   useEffect(() => {
     setLoaded(true);
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/reviews`)
+    fetch(`${import.meta.env.VITE_API_URL || 'https://three-oaks-motel-api.onrender.com'}/api/reviews`)
       .then(r => r.json())
       .then(data => { if (Array.isArray(data) && data.length) setReviews(data); })
       .catch(() => {});
