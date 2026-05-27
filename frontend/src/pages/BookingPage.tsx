@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, Check, CalendarDays, Moon, CreditCard } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_URL || 'https://three-oaks-motel-api.onrender.com';
@@ -59,8 +59,9 @@ export default function BookingPage() {
   const today = localDate(new Date());
   const tomorrow = localDate(new Date(Date.now() + 86400000));
 
-  const [checkIn, setCheckIn] = useState(today);
-  const [checkOut, setCheckOut] = useState(tomorrow);
+  const [searchParams] = useSearchParams();
+  const [checkIn, setCheckIn] = useState(searchParams.get('check_in') || today);
+  const [checkOut, setCheckOut] = useState(searchParams.get('check_out') || tomorrow);
   const [step, setStep] = useState<Step>('search');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -71,6 +72,14 @@ export default function BookingPage() {
   const [confirmedId, setConfirmedId] = useState<number | null>(null);
   const [confirmedRef, setConfirmedRef] = useState<string>('');
   const [showPriceBreakdown, setShowPriceBreakdown] = useState<string | null>(null);
+
+  // Auto-search if dates came from the homepage hero form
+  useEffect(() => {
+    if (searchParams.get('check_in') && searchParams.get('check_out')) {
+      handleSearch();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSearch = async () => {
     if (!checkIn || !checkOut) return;
