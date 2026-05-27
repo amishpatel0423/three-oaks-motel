@@ -80,17 +80,26 @@ export default function BookingPage() {
     }
     setError('');
     setLoading(true);
-    try {
-      const res = await fetch(`${API}/api/availability?check_in=${checkIn}&check_out=${checkOut}`);
-      if (!res.ok) throw new Error('Failed to fetch availability.');
-      const data: CategoryAvailability[] = await res.json();
-      setAvailability(data);
-      setStep('results');
-    } catch {
-      setError('Unable to connect to the server. Please try again.');
-    } finally {
-      setLoading(false);
+    // Retry once — handles Render free-tier cold start (~30s wake-up)
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch(`${API}/api/availability?check_in=${checkIn}&check_out=${checkOut}`);
+        if (!res.ok) throw new Error('Failed to fetch availability.');
+        const data: CategoryAvailability[] = await res.json();
+        setAvailability(data);
+        setStep('results');
+        setLoading(false);
+        return;
+      } catch {
+        if (attempt === 0) {
+          setError('Server is waking up, retrying…');
+          await new Promise(r => setTimeout(r, 8000));
+        } else {
+          setError('Unable to connect to the server. Please try again in a moment.');
+        }
+      }
     }
+    setLoading(false);
   };
 
   const handleReserve = (cat: CategoryAvailability) => {
