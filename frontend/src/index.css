@@ -22,6 +22,7 @@
     from { background-position: 50% 0%; }
     to { background-position: 50% 100%; }
   }
+
 }
 
 :root {
@@ -68,6 +69,28 @@
     opacity: 0;
     animation: fadeIn 0.8s ease-out forwards;
   }
+}
+
+/* Swiper gallery brand overrides */
+.gallery-swiper {
+  padding-bottom: 2.5rem !important;
+}
+.gallery-swiper .swiper-button-next,
+.gallery-swiper .swiper-button-prev {
+  color: var(--color-ocean);
+  background: white;
+  border-radius: 9999px;
+  width: 2.5rem;
+  height: 2.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.gallery-swiper .swiper-button-next::after,
+.gallery-swiper .swiper-button-prev::after {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.gallery-swiper .swiper-pagination-bullet-active {
+  background: var(--color-ocean);
 }
 
 /* Custom Scrollbar */
