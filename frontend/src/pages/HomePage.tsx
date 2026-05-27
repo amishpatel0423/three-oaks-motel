@@ -54,28 +54,25 @@ export default function HomePage() {
       <div className="sticky top-0 z-50">
 
       {/* Top Info Banner */}
-      <div className="w-full bg-ocean text-white text-xs py-1.5 px-4 flex items-center justify-between gap-x-4">
-        {/* Left — address */}
-        <span className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
+      <div className="w-full bg-ocean text-white text-xs py-1.5 px-4 flex items-center justify-center flex-wrap gap-x-4 gap-y-1">
+        <span className="flex items-center gap-1.5">
           <i className="fas fa-map-marker-alt opacity-70"></i>
           707 S. Hopkins Ave, Titusville, FL 32780
         </span>
-        {/* Center — phone */}
-        <a href="tel:3212676272" className="flex items-center gap-1.5 hover:text-white/80 transition-colors mx-auto">
+        <span className="text-white/30 hidden sm:inline">|</span>
+        <a href="tel:3212676272" className="flex items-center gap-1.5 hover:text-white/80 transition-colors">
           <i className="fas fa-phone opacity-70"></i>
           (321) 267-6272
         </a>
-        {/* Right — check-in / check-out */}
-        <span className="hidden sm:flex items-center gap-3 flex-shrink-0">
-          <span className="flex items-center gap-1.5">
-            <i className="fas fa-sign-in-alt opacity-70"></i>
-            Check-in: 2:00 PM
-          </span>
-          <span className="text-white/30">|</span>
-          <span className="flex items-center gap-1.5">
-            <i className="fas fa-sign-out-alt opacity-70"></i>
-            Check-out: 11:00 AM
-          </span>
+        <span className="text-white/30 hidden sm:inline">|</span>
+        <span className="flex items-center gap-1.5">
+          <i className="fas fa-sign-in-alt opacity-70"></i>
+          Check-in: 2:00 PM
+        </span>
+        <span className="text-white/30">|</span>
+        <span className="flex items-center gap-1.5">
+          <i className="fas fa-sign-out-alt opacity-70"></i>
+          Check-out: 11:00 AM
         </span>
       </div>
 
