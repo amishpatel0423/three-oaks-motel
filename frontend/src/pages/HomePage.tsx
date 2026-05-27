@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { galleryImages } from '../data/galleryAssets';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Navigation, Pagination } from 'swiper/modules';
+import { Autoplay, Pagination } from 'swiper/modules';
+import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
-import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
 export default function HomePage() {
@@ -16,6 +16,7 @@ export default function HomePage() {
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
   const [heroCheckIn, setHeroCheckIn] = useState(today);
   const [heroCheckOut, setHeroCheckOut] = useState(tomorrow);
+  const gallerySwiperRef = useRef<SwiperType | null>(null);
 
 
   const [reviews, setReviews] = useState<{author_name:string; rating:number; text:string; time_ago:string}[]>([]);
@@ -356,32 +357,53 @@ export default function HomePage() {
             <p className="mt-4 text-slate-600">A look inside Three Oaks Motel.</p>
           </div>
 
-          <Swiper
-            modules={[Autoplay, Navigation, Pagination]}
-            slidesPerView={2}
-            spaceBetween={8}
-            loop={true}
-            autoplay={{ delay: 3500, disableOnInteraction: false, pauseOnMouseEnter: true }}
-            navigation
-            pagination={{ clickable: true }}
-            breakpoints={{
-              1024: { slidesPerView: 4, spaceBetween: 10 },
-            }}
-            className="gallery-swiper rounded-2xl"
-          >
-            {galleryImages.map((img, i) => (
-              <SwiperSlide key={i}>
-                <div className="overflow-hidden rounded-xl aspect-[4/3] group/img">
-                  <img
-                    src={`${import.meta.env.BASE_URL}images/gallery/${img}`}
-                    alt={`Three Oaks Motel photo ${i + 1}`}
-                    loading="lazy"
-                    className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700"
-                  />
-                </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
+          <div className="relative px-12">
+            {/* Prev button — sits in the left padding, never overlaps photos */}
+            <button
+              onClick={() => gallerySwiperRef.current?.slidePrev()}
+              className="absolute left-0 top-1/2 -translate-y-6 z-10 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center text-ocean hover:bg-sky-light transition-colors"
+              aria-label="Previous photo"
+            >
+              <i className="fas fa-chevron-left text-sm" />
+            </button>
+
+            <Swiper
+              onSwiper={(swiper) => { gallerySwiperRef.current = swiper; }}
+              modules={[Autoplay, Pagination]}
+              slidesPerView={1.3}
+              spaceBetween={10}
+              loop={true}
+              autoplay={{ delay: 3500, disableOnInteraction: false, pauseOnMouseEnter: true }}
+              pagination={{ clickable: true }}
+              breakpoints={{
+                640:  { slidesPerView: 2,   spaceBetween: 10 },
+                1024: { slidesPerView: 3,   spaceBetween: 12 },
+              }}
+              className="gallery-swiper rounded-2xl"
+            >
+              {galleryImages.map((img, i) => (
+                <SwiperSlide key={i}>
+                  <div className="overflow-hidden rounded-xl aspect-[4/3] group/img">
+                    <img
+                      src={`${import.meta.env.BASE_URL}images/gallery/${img}`}
+                      alt={`Three Oaks Motel photo ${i + 1}`}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700"
+                    />
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+
+            {/* Next button — sits in the right padding */}
+            <button
+              onClick={() => gallerySwiperRef.current?.slideNext()}
+              className="absolute right-0 top-1/2 -translate-y-6 z-10 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center text-ocean hover:bg-sky-light transition-colors"
+              aria-label="Next photo"
+            >
+              <i className="fas fa-chevron-right text-sm" />
+            </button>
+          </div>
         </div>
       </section>
 
