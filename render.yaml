@@ -4,6 +4,11 @@ databases:
     user: motel
     plan: free
 
+  - name: three-oaks-motel-db-uat
+    databaseName: motel_uat
+    user: motel_uat
+    plan: starter
+
 services:
   - type: web
     name: three-oaks-motel-api
@@ -12,10 +17,29 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn main:app --bind 0.0.0.0:$PORT
     plan: free
+    branch: main
     envVars:
       - key: DATABASE_URL
         fromDatabase:
           name: three-oaks-motel-db
+          property: connectionString
+      - key: GOOGLE_API_KEY
+        value: AIzaSyBy7FZLlpJ0HrcIipvP9vYOlmAVA0HFxDk
+      - key: PYTHON_VERSION
+        value: 3.11.0
+
+  - type: web
+    name: three-oaks-motel-api-uat
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn main:app --bind 0.0.0.0:$PORT
+    plan: free
+    branch: uat
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: three-oaks-motel-db-uat
           property: connectionString
       - key: GOOGLE_API_KEY
         value: AIzaSyBy7FZLlpJ0HrcIipvP9vYOlmAVA0HFxDk
