@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, Check, CalendarDays, Moon, CreditCard } from 'lucide-react';
 
-const API = 'http://localhost:8000';
+const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const ROOM_INFO: Record<string, { image: string; desc: string }> = {
   'One King': {
@@ -36,6 +36,10 @@ interface GuestInfo {
   name: string;
   email: string;
   phone: string;
+  adults: number;
+  kids: number;
+
+  specialRequests: string;
 }
 
 type Step = 'search' | 'results' | 'checkout' | 'confirmed';
@@ -51,8 +55,9 @@ function nightCount(checkIn: string, checkOut: string): number {
 }
 
 export default function BookingPage() {
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const localDate = (d: Date) => { const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; };
+  const today = localDate(new Date());
+  const tomorrow = localDate(new Date(Date.now() + 86400000));
 
   const [checkIn, setCheckIn] = useState(today);
   const [checkOut, setCheckOut] = useState(tomorrow);
@@ -61,9 +66,10 @@ export default function BookingPage() {
   const [error, setError] = useState('');
   const [availability, setAvailability] = useState<CategoryAvailability[]>([]);
   const [selected, setSelected] = useState<CategoryAvailability | null>(null);
-  const [guest, setGuest] = useState<GuestInfo>({ name: '', email: '', phone: '' });
+  const [guest, setGuest] = useState<GuestInfo>({ name: '', email: '', phone: '', adults: 1, kids: 0, specialRequests: '' });
   const [submitting, setSubmitting] = useState(false);
   const [confirmedId, setConfirmedId] = useState<number | null>(null);
+  const [confirmedRef, setConfirmedRef] = useState<string>('');
   const [showPriceBreakdown, setShowPriceBreakdown] = useState<string | null>(null);
 
   const handleSearch = async () => {
@@ -112,11 +118,16 @@ export default function BookingPage() {
           check_in_date: checkIn,
           check_out_date: checkOut,
           total_price: selected.total_price,
+          adults: guest.adults,
+          kids: guest.kids,
+
+          special_requests: guest.specialRequests,
         }),
       });
       if (!res.ok) throw new Error('Booking failed.');
       const data = await res.json();
       setConfirmedId(data.booking_id);
+      setConfirmedRef(data.reference_number || '');
       setStep('confirmed');
     } catch {
       setError('Unable to complete booking. Please try again.');
@@ -136,7 +147,7 @@ export default function BookingPage() {
             <Check size={36} />
           </div>
           <h2 className="text-3xl font-display font-bold text-slate-900 mb-2">Booking Received!</h2>
-          <p className="text-slate-500 mb-4">Booking reference: <span className="font-bold text-ocean">#{confirmedId}</span></p>
+          <p className="text-slate-500 mb-4">Booking reference: <span className="font-bold text-ocean">{confirmedRef || `#${confirmedId}`}</span></p>
           <div className="bg-slate-50 rounded-xl p-4 text-left text-sm text-slate-700 space-y-2 mb-6">
             <p><span className="font-semibold">Room:</span> {selected?.category}</p>
             <p><span className="font-semibold">Check-in:</span> {formatDate(checkIn)} from 2:00 PM</p>
@@ -261,17 +272,6 @@ export default function BookingPage() {
                           ))}
                         </div>
 
-                        {/* Available room numbers */}
-                        {cat.available_count > 0 && (
-                          <div className="flex flex-wrap gap-1.5 items-center">
-                            <span className="text-xs text-slate-400 font-medium mr-1">Rooms:</span>
-                            {cat.room_numbers.map(n => (
-                              <span key={n} className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">
-                                #{n}
-                              </span>
-                            ))}
-                          </div>
-                        )}
                       </div>
 
                       <div className="flex items-end justify-between flex-wrap gap-4">
@@ -396,6 +396,42 @@ export default function BookingPage() {
                       className="w-full p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-ocean/40"
                     />
                   </div>
+                </div>
+
+                {/* Guests */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Adults</label>
+                    <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden">
+                      <button type="button" onClick={() => setGuest(g => ({ ...g, adults: Math.max(1, g.adults - 1) }))}
+                        className="px-3 py-2.5 text-slate-500 hover:bg-slate-50 font-bold text-lg leading-none">−</button>
+                      <span className="flex-1 text-center font-bold text-slate-800">{guest.adults}</span>
+                      <button type="button" onClick={() => setGuest(g => ({ ...g, adults: Math.min(10, g.adults + 1) }))}
+                        className="px-3 py-2.5 text-slate-500 hover:bg-slate-50 font-bold text-lg leading-none">+</button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Children</label>
+                    <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden">
+                      <button type="button" onClick={() => setGuest(g => ({ ...g, kids: Math.max(0, g.kids - 1) }))}
+                        className="px-3 py-2.5 text-slate-500 hover:bg-slate-50 font-bold text-lg leading-none">−</button>
+                      <span className="flex-1 text-center font-bold text-slate-800">{guest.kids}</span>
+                      <button type="button" onClick={() => setGuest(g => ({ ...g, kids: Math.min(10, g.kids + 1) }))}
+                        className="px-3 py-2.5 text-slate-500 hover:bg-slate-50 font-bold text-lg leading-none">+</button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Special requests */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Special Requests <span className="font-normal normal-case text-slate-400">(optional)</span></label>
+                  <textarea
+                    rows={3}
+                    placeholder="e.g. ground floor room, extra pillows, late check-in…"
+                    value={guest.specialRequests}
+                    onChange={e => setGuest({ ...guest, specialRequests: e.target.value })}
+                    className="w-full p-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-ocean/40 resize-none text-sm"
+                  />
                 </div>
 
                 <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm text-amber-800 flex gap-3">

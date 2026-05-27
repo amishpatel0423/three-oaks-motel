@@ -1,6 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { galleryImages } from '../data/galleryAssets';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Autoplay, Navigation, Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -12,34 +17,15 @@ export default function HomePage() {
   const [heroCheckIn, setHeroCheckIn] = useState(today);
   const [heroCheckOut, setHeroCheckOut] = useState(tomorrow);
 
-  // Gallery carousel state
-  const [galleryIdx, setGalleryIdx] = useState(0);
-  const galleryPaused = useRef(false);
-  const [visibleCount, setVisibleCount] = useState(4);
 
-  useEffect(() => {
-    const getVisible = () => {
-      if (window.innerWidth < 640) return 1;
-      if (window.innerWidth < 1024) return 2;
-      return 4;
-    };
-    setVisibleCount(getVisible());
-    const onResize = () => setVisibleCount(getVisible());
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (!galleryPaused.current) {
-        setGalleryIdx(i => (i + 1) % galleryImages.length);
-      }
-    }, 3500);
-    return () => clearInterval(timer);
-  }, []);
+  const [reviews, setReviews] = useState<{author_name:string; rating:number; text:string; time_ago:string}[]>([]);
 
   useEffect(() => {
     setLoaded(true);
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/reviews`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data) && data.length) setReviews(data); })
+      .catch(() => {});
     const handleScroll = () => {
       setScrollPos(window.scrollY);
     };
@@ -68,42 +54,44 @@ export default function HomePage() {
       <div className="sticky top-0 z-50">
 
       {/* Top Info Banner */}
-      <div className="w-full bg-ocean text-white text-xs py-1.5 px-4 flex items-center justify-center gap-x-4 gap-y-0.5 text-center flex-wrap">
-        <span className="hidden sm:flex items-center gap-1.5">
+      <div className="w-full bg-ocean text-white text-xs py-1.5 px-4 flex items-center justify-between gap-x-4">
+        {/* Left — address */}
+        <span className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
           <i className="fas fa-map-marker-alt opacity-70"></i>
           707 S. Hopkins Ave, Titusville, FL 32780
         </span>
-        <span className="hidden sm:block text-white/30">|</span>
-        <a href="tel:3212676272" className="flex items-center gap-1.5 hover:text-white/80 transition-colors">
+        {/* Center — phone */}
+        <a href="tel:3212676272" className="flex items-center gap-1.5 hover:text-white/80 transition-colors mx-auto">
           <i className="fas fa-phone opacity-70"></i>
           (321) 267-6272
         </a>
-        <span className="text-white/30">|</span>
-        <span className="flex items-center gap-1.5">
-          <i className="fas fa-sign-in-alt opacity-70"></i>
-          Check-in: 2:00 PM
-        </span>
-        <span className="text-white/30">|</span>
-        <span className="flex items-center gap-1.5">
-          <i className="fas fa-sign-out-alt opacity-70"></i>
-          Check-out: 11:00 AM
+        {/* Right — check-in / check-out */}
+        <span className="hidden sm:flex items-center gap-3 flex-shrink-0">
+          <span className="flex items-center gap-1.5">
+            <i className="fas fa-sign-in-alt opacity-70"></i>
+            Check-in: 2:00 PM
+          </span>
+          <span className="text-white/30">|</span>
+          <span className="flex items-center gap-1.5">
+            <i className="fas fa-sign-out-alt opacity-70"></i>
+            Check-out: 11:00 AM
+          </span>
         </span>
       </div>
 
       {/* Navigation */}
       <nav className="w-full glass-card rounded-none border-t-0 border-x-0 py-3 md:py-4 px-4 md:px-8 flex justify-between items-center">
         <Link to="/" className="flex items-center">
-          <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Three Oaks Motel Logo" className="h-16 w-auto hover:scale-105 transition-transform duration-300" />
+          <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Three Oaks Motel Logo" className="h-24 w-auto hover:scale-105 transition-transform duration-300" />
         </Link>
         <div className="hidden md:flex items-center gap-6 lg:gap-8 transition-all">
           <a href="#about" onClick={(e) => handleNavClick(e, 'about')} className="nav-link">About</a>
           <a href="#amenities" onClick={(e) => handleNavClick(e, 'amenities')} className="nav-link hidden lg:block">Amenities</a>
           <a href="#rooms" onClick={(e) => handleNavClick(e, 'rooms')} className="nav-link">Rooms</a>
           <a href="#booking" onClick={(e) => handleNavClick(e, 'booking')} className="nav-link">Book Now</a>
-          <a href="#gallery" onClick={(e) => handleNavClick(e, 'gallery')} className="nav-link font-bold text-ocean">Gallery</a>
+          <a href="#gallery" onClick={(e) => handleNavClick(e, 'gallery')} className="nav-link">Gallery</a>
           <a href="#contact" onClick={(e) => handleNavClick(e, 'contact')} className="nav-link">Contact</a>
-          <Link to="/admin" className="nav-link border-l pl-8 border-slate-200">
-            <i className="fas fa-lock mr-2"></i>Admin
+          <Link to="/admin" className="nav-link">Admin
           </Link>
         </div>
 
@@ -147,9 +135,7 @@ export default function HomePage() {
           <a href="#amenities" onClick={(e) => handleNavClick(e, 'amenities')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Amenities</a>
           <a href="#rooms" onClick={(e) => handleNavClick(e, 'rooms')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Guest Rooms</a>
           <a href="#booking" onClick={(e) => handleNavClick(e, 'booking')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Book Now</a>
-          <a href="#gallery" onClick={(e) => handleNavClick(e, 'gallery')} className="text-2xl font-display font-medium text-ocean border-b border-slate-100 pb-4 tracking-tight flex items-center justify-between">
-            Photo Gallery <i className="fas fa-chevron-right text-sm opacity-30"></i>
-          </a>
+          <a href="#gallery" onClick={(e) => handleNavClick(e, 'gallery')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Gallery</a>
           <a href="#contact" onClick={(e) => handleNavClick(e, 'contact')} className="text-2xl font-display font-medium text-slate-800 border-b border-slate-100 pb-4 hover:text-ocean tracking-tight">Contact</a>
 
           <div className="mt-auto pt-8">
@@ -318,23 +304,47 @@ export default function HomePage() {
             </div>
             <h3 className="text-3xl font-display font-bold text-slate-900 mb-3">Top Rated by Guests</h3>
             <p className="text-slate-500 max-w-2xl mx-auto">Consistently applauded for our cleanliness, pristine location, and excellent local hospitality.</p>
+            {reviews.length > 0 && (
+              <div className="flex items-center justify-center gap-1.5 mt-3">
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                <span className="text-xs text-slate-400 font-medium">Powered by Google</span>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
-              <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
-              <p className="relative z-10 italic text-slate-700 leading-relaxed">"This is hands down the cleanest motel I've stayed at in Titusville. The owners are incredibly accommodating and the property looks immaculate."</p>
-              <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Google Review</span>
-            </div>
-            <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
-              <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
-              <p className="relative z-10 italic text-slate-700 leading-relaxed">"Perfect spot to watch the rocket launches! The location is phenomenal and you're right by the coastline and all the prominent Space Center spots."</p>
-              <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Booking Review</span>
-            </div>
-            <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
-              <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
-              <p className="relative z-10 italic text-slate-700 leading-relaxed">"Excellent value. High pressure hot showers, freezing cold AC, and super comfortable beds. Will absolutely book again next time I am in town."</p>
-              <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Guest</span>
-            </div>
+            {reviews.length > 0 ? reviews.slice(0, 3).map((r, i) => (
+              <div key={i} className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
+                <div className="flex gap-0.5 text-amber-400 mb-3">
+                  {Array.from({ length: r.rating }).map((_, s) => (
+                    <i key={s} className="fas fa-star text-sm" />
+                  ))}
+                </div>
+                <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
+                <p className="relative z-10 italic text-slate-700 leading-relaxed">"{r.text}"</p>
+                <div className="mt-6 flex items-center justify-between">
+                  <span className="font-bold text-sm text-ocean uppercase tracking-wider">— {r.author_name}</span>
+                  <span className="text-xs text-slate-400">{r.time_ago}</span>
+                </div>
+              </div>
+            )) : (
+              <>
+                <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
+                  <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
+                  <p className="relative z-10 italic text-slate-700 leading-relaxed">"This is hands down the cleanest motel I've stayed at in Titusville. The owners are incredibly accommodating and the property looks immaculate."</p>
+                  <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Google Review</span>
+                </div>
+                <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
+                  <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
+                  <p className="relative z-10 italic text-slate-700 leading-relaxed">"Perfect spot to watch the rocket launches! The location is phenomenal and you're right by the coastline and all the prominent Space Center spots."</p>
+                  <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Booking Review</span>
+                </div>
+                <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl relative shadow-sm">
+                  <i className="fas fa-quote-left text-4xl text-sky-light/50 absolute top-4 left-4"></i>
+                  <p className="relative z-10 italic text-slate-700 leading-relaxed">"Excellent value. High pressure hot showers, freezing cold AC, and super comfortable beds. Will absolutely book again next time I am in town."</p>
+                  <span className="block mt-6 font-bold text-sm text-ocean uppercase tracking-wider">- Verified Guest</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -349,66 +359,32 @@ export default function HomePage() {
             <p className="mt-4 text-slate-600">A look inside Three Oaks Motel.</p>
           </div>
 
-          <div
-            className="relative"
-            onMouseEnter={() => { galleryPaused.current = true; }}
-            onMouseLeave={() => { galleryPaused.current = false; }}
+          <Swiper
+            modules={[Autoplay, Navigation, Pagination]}
+            slidesPerView={2}
+            spaceBetween={8}
+            loop={true}
+            autoplay={{ delay: 3500, disableOnInteraction: false, pauseOnMouseEnter: true }}
+            navigation
+            pagination={{ clickable: true }}
+            breakpoints={{
+              1024: { slidesPerView: 4, spaceBetween: 10 },
+            }}
+            className="gallery-swiper rounded-2xl"
           >
-            {/* Prev arrow */}
-            <button
-              onClick={() => setGalleryIdx(i => (i - 1 + galleryImages.length) % galleryImages.length)}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 md:-translate-x-5 z-10 w-9 h-9 md:w-11 md:h-11 bg-white shadow-lg rounded-full flex items-center justify-center text-ocean hover:bg-ocean hover:text-white transition-colors"
-              aria-label="Previous"
-            >
-              <i className="fas fa-chevron-left text-sm"></i>
-            </button>
-
-            {/* Next arrow */}
-            <button
-              onClick={() => setGalleryIdx(i => (i + 1) % galleryImages.length)}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 md:translate-x-5 z-10 w-9 h-9 md:w-11 md:h-11 bg-white shadow-lg rounded-full flex items-center justify-center text-ocean hover:bg-ocean hover:text-white transition-colors"
-              aria-label="Next"
-            >
-              <i className="fas fa-chevron-right text-sm"></i>
-            </button>
-
-            {/* Track */}
-            <div className="overflow-hidden rounded-2xl">
-              <div
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${galleryIdx * (100 / galleryImages.length)}%)` }}
-              >
-                {galleryImages.map((img, i) => (
-                  <div
-                    key={i}
-                    style={{ width: `${100 / visibleCount}%`, flexShrink: 0 }}
-                    className="px-1"
-                  >
-                    <div className="overflow-hidden rounded-xl aspect-[4/3] group/img">
-                      <img
-                        src={`${import.meta.env.BASE_URL}images/gallery/${img}`}
-                        alt={`Three Oaks Motel photo ${i + 1}`}
-                        loading="lazy"
-                        className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Dot indicators */}
-            <div className="flex justify-center gap-1.5 mt-5">
-              {galleryImages.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setGalleryIdx(i)}
-                  className={`rounded-full transition-all duration-300 ${i === galleryIdx ? 'w-6 h-2 bg-ocean' : 'w-2 h-2 bg-slate-300 hover:bg-ocean/50'}`}
-                  aria-label={`Go to photo ${i + 1}`}
-                />
-              ))}
-            </div>
-          </div>
+            {galleryImages.map((img, i) => (
+              <SwiperSlide key={i}>
+                <div className="overflow-hidden rounded-xl aspect-[4/3] group/img">
+                  <img
+                    src={`${import.meta.env.BASE_URL}images/gallery/${img}`}
+                    alt={`Three Oaks Motel photo ${i + 1}`}
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700"
+                  />
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
         </div>
       </section>
 
@@ -470,7 +446,7 @@ export default function HomePage() {
       <footer id="contact" className="bg-slate-900 text-white py-10 px-4 md:py-20 md:px-8">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
           <div>
-            <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Three Oaks Motel Logo" className="h-12 w-auto mb-6 brightness-0 invert opacity-80" />
+            <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Three Oaks Motel Logo" className="h-20 w-auto mb-6" />
             <p className="text-slate-400 font-light leading-relaxed">
               Experience the best of Titusville. Comfortable accommodations, friendly service, and the closest views of Florida's legendary launches.
             </p>
