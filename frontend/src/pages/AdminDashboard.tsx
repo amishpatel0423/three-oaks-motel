@@ -1224,7 +1224,7 @@ export default function AdminDashboard() {
                 <PhotoGrid
                   photos={roomPhotos.filter(p => p.category === cat)}
                   onDelete={handleDeleteRoomPhoto}
-                  onAddUrl={(url, caption) => handleAddRoomPhoto(cat, url)}
+                  onAddUrl={(url) => handleAddRoomPhoto(cat, url)}
                 />
               </div>
             ))}
