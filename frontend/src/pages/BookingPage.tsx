@@ -118,8 +118,17 @@ export default function BookingPage() {
 
   const handleConfirm = async () => {
     if (!selected) return;
-    if (!guest.name || !guest.email || !guest.phone) {
-      setError('Please fill in all guest details.');
+    if (!guest.name.trim()) {
+      setError('Please enter your full name.');
+      return;
+    }
+    if (!guest.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guest.email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    const digitsOnly = guest.phone.replace(/\D/g, '');
+    if (digitsOnly.length < 10) {
+      setError('Please enter a valid phone number (at least 10 digits).');
       return;
     }
     setError('');
