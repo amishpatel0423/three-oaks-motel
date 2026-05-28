@@ -1,10 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Home, Check, X, LayoutDashboard, Calendar, RefreshCw, DollarSign, BedDouble, CalendarDays, ChevronLeft, ChevronRight, Save, BarChart2, FileText, Upload, Trash2, Plus, Image } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Home, Check, X, LayoutDashboard, Calendar, RefreshCw, DollarSign, BedDouble, CalendarDays, ChevronLeft, ChevronRight, Save, BarChart2, FileText, Trash2, Plus, Image } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const API = import.meta.env.VITE_API_URL || 'https://three-oaks-motel-api.onrender.com';
-const CLOUDINARY_CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '';
-const CLOUDINARY_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || '';
 
 interface Booking {
   id: number;
@@ -165,22 +163,12 @@ function fmtMonth(m: string): string {
   return new Date(+y, +mo - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
-// ── Cloudinary upload ─────────────────────────────────────────────────────────
+// ── Photo URL helper ──────────────────────────────────────────────────────────
 
-async function uploadToCloudinary(file: File): Promise<string> {
-  if (!CLOUDINARY_CLOUD || !CLOUDINARY_PRESET) {
-    throw new Error('Cloudinary not configured. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.');
-  }
-  const fd = new FormData();
-  fd.append('file', file);
-  fd.append('upload_preset', CLOUDINARY_PRESET);
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
-    method: 'POST',
-    body: fd,
-  });
-  if (!res.ok) throw new Error('Upload failed');
-  const data = await res.json();
-  return data.secure_url as string;
+function photoSrc(url: string): string {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  return `${import.meta.env.BASE_URL}${url.replace(/^\//, '')}`;
 }
 
 // ── Photo grid component ──────────────────────────────────────────────────────
@@ -188,54 +176,77 @@ async function uploadToCloudinary(file: File): Promise<string> {
 function PhotoGrid({
   photos,
   onDelete,
-  onAdd,
-  uploading,
+  onAddUrl,
 }: {
   photos: Photo[];
   onDelete: (id: number) => void;
-  onAdd: (file: File) => void;
-  uploading: boolean;
+  onAddUrl: (url: string, caption?: string) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [adding, setAdding] = useState(false);
+  const [urlVal, setUrlVal] = useState('');
+  const [captionVal, setCaptionVal] = useState('');
+
+  const handleAdd = () => {
+    if (!urlVal.trim()) return;
+    onAddUrl(urlVal.trim(), captionVal.trim());
+    setUrlVal(''); setCaptionVal(''); setAdding(false);
+  };
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-      {photos.map(p => (
-        <div key={p.id} className="relative group rounded-xl overflow-hidden aspect-video bg-slate-100">
-          <img src={p.url} alt={p.caption || ''} className="w-full h-full object-cover" />
-          <button
-            onClick={() => onDelete(p.id)}
-            className="absolute top-1.5 right-1.5 p-1.5 bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <Trash2 size={14} />
-          </button>
-          {p.caption && (
-            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-2 py-1 truncate">{p.caption}</div>
-          )}
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        {photos.map(p => (
+          <div key={p.id} className="relative group rounded-xl overflow-hidden aspect-video bg-slate-100">
+            <img src={photoSrc(p.url)} alt={p.caption || ''} className="w-full h-full object-cover" />
+            <button
+              onClick={() => onDelete(p.id)}
+              className="absolute top-1.5 right-1.5 p-1.5 bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Trash2 size={14} />
+            </button>
+            {p.caption && (
+              <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-2 py-1 truncate">{p.caption}</div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {adding ? (
+        <div className="flex gap-2 items-end flex-wrap bg-slate-50 rounded-xl p-4 border border-slate-200">
+          <div className="flex-1 min-w-[220px]">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Photo URL</label>
+            <input
+              type="text"
+              value={urlVal}
+              onChange={e => setUrlVal(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              placeholder="https://… or /images/gallery/photo.jpg"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Caption (optional)</label>
+            <input
+              type="text"
+              value={captionVal}
+              onChange={e => setCaptionVal(e.target.value)}
+              className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleAdd} className="btn-primary py-2 px-4 text-sm">Add</button>
+            <button onClick={() => setAdding(false)} className="py-2 px-4 text-sm text-slate-500 hover:text-slate-800 border border-slate-200 rounded-lg">Cancel</button>
+          </div>
         </div>
-      ))}
-
-      {/* Upload tile */}
-      <button
-        onClick={() => inputRef.current?.click()}
-        disabled={uploading}
-        className="aspect-video rounded-xl border-2 border-dashed border-slate-300 hover:border-ocean hover:bg-ocean/5 flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-ocean transition-colors disabled:opacity-50"
-      >
-        {uploading ? (
-          <RefreshCw size={20} className="animate-spin" />
-        ) : (
-          <Upload size={20} />
-        )}
-        <span className="text-xs font-semibold">{uploading ? 'Uploading…' : 'Add Photo'}</span>
-      </button>
-
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={e => { if (e.target.files?.[0]) { onAdd(e.target.files[0]); e.target.value = ''; } }}
-      />
+      ) : (
+        <button
+          onClick={() => setAdding(true)}
+          className="flex items-center gap-2 text-sm font-semibold text-ocean hover:text-ocean-dark transition-colors"
+        >
+          <Plus size={16} /> Add Photo by URL
+        </button>
+      )}
     </div>
   );
 }
@@ -278,8 +289,6 @@ export default function AdminDashboard() {
   const [roomPhotos, setRoomPhotos]       = useState<Photo[]>([]);
   const [contentSaving, setContentSaving] = useState(false);
   const [contentMsg, setContentMsg]       = useState('');
-  const [uploadingGallery, setUploadingGallery] = useState(false);
-  const [uploadingRoom, setUploadingRoom]       = useState<string | null>(null);
 
   // Analytics tab state
   const [analyticsData, setAnalyticsData]   = useState<AnalyticsRow[]>([]);
@@ -441,22 +450,14 @@ export default function AdminDashboard() {
     finally { setContentSaving(false); }
   };
 
-  const handleAddGalleryPhoto = async (file: File) => {
-    setUploadingGallery(true);
-    try {
-      const url = await uploadToCloudinary(file);
-      const res = await fetch(`${API}/api/admin/gallery`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, caption: '' }),
-      });
-      const photo = await res.json();
-      setGalleryPhotos(prev => [...prev, photo]);
-    } catch (e) {
-      alert((e as Error).message);
-    } finally {
-      setUploadingGallery(false);
-    }
+  const handleAddGalleryPhoto = async (url: string, caption = '') => {
+    const res = await fetch(`${API}/api/admin/gallery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, caption }),
+    });
+    const photo = await res.json();
+    setGalleryPhotos(prev => [...prev, photo]);
   };
 
   const handleDeleteGalleryPhoto = async (id: number) => {
@@ -465,22 +466,14 @@ export default function AdminDashboard() {
     setGalleryPhotos(prev => prev.filter(p => p.id !== id));
   };
 
-  const handleAddRoomPhoto = async (category: string, file: File) => {
-    setUploadingRoom(category);
-    try {
-      const url = await uploadToCloudinary(file);
-      const res = await fetch(`${API}/api/admin/room-photos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category, url }),
-      });
-      const photo = await res.json();
-      setRoomPhotos(prev => [...prev, photo]);
-    } catch (e) {
-      alert((e as Error).message);
-    } finally {
-      setUploadingRoom(null);
-    }
+  const handleAddRoomPhoto = async (category: string, url: string) => {
+    const res = await fetch(`${API}/api/admin/room-photos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category, url }),
+    });
+    const photo = await res.json();
+    setRoomPhotos(prev => [...prev, photo]);
   };
 
   const handleDeleteRoomPhoto = async (id: number) => {
@@ -529,8 +522,6 @@ export default function AdminDashboard() {
     Math.round((new Date(co).getTime() - new Date(ci).getTime()) / 86400000);
 
   const pendingCount = Object.keys(pendingEdits).length;
-
-  const cloudinaryConfigured = !!CLOUDINARY_CLOUD && !!CLOUDINARY_PRESET;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -1144,14 +1135,7 @@ export default function AdminDashboard() {
         {tab === 'content' && (
           <div className="space-y-8">
 
-            {/* Cloudinary warning */}
-            {!cloudinaryConfigured && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-                <strong>Photo uploads require Cloudinary.</strong> Set <code className="font-mono bg-amber-100 px-1 rounded">VITE_CLOUDINARY_CLOUD_NAME</code> and <code className="font-mono bg-amber-100 px-1 rounded">VITE_CLOUDINARY_UPLOAD_PRESET</code> in your Vercel environment variables, then redeploy.
-              </div>
-            )}
-
-            {/* Save bar */}
+              {/* Save bar */}
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-display font-bold text-slate-900">Site Content</h2>
               <div className="flex items-center gap-3">
@@ -1227,8 +1211,7 @@ export default function AdminDashboard() {
               <PhotoGrid
                 photos={galleryPhotos}
                 onDelete={handleDeleteGalleryPhoto}
-                onAdd={handleAddGalleryPhoto}
-                uploading={uploadingGallery}
+                onAddUrl={handleAddGalleryPhoto}
               />
             </div>
 
@@ -1241,8 +1224,7 @@ export default function AdminDashboard() {
                 <PhotoGrid
                   photos={roomPhotos.filter(p => p.category === cat)}
                   onDelete={handleDeleteRoomPhoto}
-                  onAdd={file => handleAddRoomPhoto(cat, file)}
-                  uploading={uploadingRoom === cat}
+                  onAddUrl={(url, caption) => handleAddRoomPhoto(cat, url)}
                 />
               </div>
             ))}

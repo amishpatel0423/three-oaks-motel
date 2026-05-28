@@ -132,6 +132,68 @@ def setup_db():
         )
     """)
 
+    # Seed site_content with default about text and amenities
+    cur.execute("SELECT COUNT(*) FROM site_content")
+    if cur.fetchone()["count"] == 0:
+        about_text = (
+            "Welcome to the Three Oaks Motel, your premier Florida Coastal retreat. "
+            "Perfectly positioned just minutes away from the legendary Kennedy Space Center, "
+            "we offer a peaceful and comfortable stay for space enthusiasts, families, and beachgoers alike.\n\n"
+            "Experience authentic local hospitality with modern conveniences designed to make your mission a success. "
+            "Whether you're here to catch a launch or enjoy the sun, we're ready to host you."
+        )
+        amenities_list = json.dumps([
+            "Non-smoking rooms", "Free Wifi", "Free parking", "Room service",
+            "CCTV outside", "24-hour front desk", "Smoke-free property",
+            "Air conditioning", "Heating", "24-hour security", "Smoke alarms",
+            "Daily housekeeping", "Fire extinguishers", "Key card access",
+            "Non-pet friendly", "Patio"
+        ])
+        cur.execute("INSERT INTO site_content (key, value) VALUES (%s,%s)", ("about", about_text))
+        cur.execute("INSERT INTO site_content (key, value) VALUES (%s,%s)", ("amenities", amenities_list))
+        print("  Seeded default site content.")
+
+    # Seed gallery_photos with existing local images
+    cur.execute("SELECT COUNT(*) FROM gallery_photos")
+    if cur.fetchone()["count"] == 0:
+        gallery_files = [
+            "20230304_124651.jpg","20230304_124703.jpg","20230304_124750.jpg",
+            "20230304_124805.jpg","20230304_124808.jpg","20230304_124822.jpg",
+            "20230304_124838.jpg","20230304_124901.jpg","20230304_124914.jpg",
+            "20230304_124938.jpg","20230304_125041.jpg","20230304_125110.jpg",
+            "20230304_125125.jpg","20230729_155010.jpg","20230729_155048.jpg",
+            "20230729_155114.jpg","20230729_155145.jpg","20230729_155208.jpg",
+            "20230729_155235.jpg","20230729_155248.jpg","20230729_155300.jpg",
+            "20230729_155335.jpg","20230729_155421.jpg","20230729_155429.jpg",
+            "20230729_155447.jpg","20230729_155522.jpg","20230729_155536.jpg",
+            "20230729_155539.jpg","20230729_155543.jpg","20230729_155546.jpg",
+            "20230729_155920.jpg","20230729_155951.jpg","20230729_160023.jpg",
+            "20230729_160044.jpg","20230729_160053.jpg","20230729_160055.jpg",
+            "20230729_160108.jpg","20230729_160119.jpg","20230729_160135.jpg",
+            "20230729_160146.jpg","20230729_160203.jpg",
+        ]
+        for i, fname in enumerate(gallery_files):
+            cur.execute(
+                "INSERT INTO gallery_photos (url, caption, sort_order) VALUES (%s,%s,%s)",
+                (f"/images/gallery/{fname}", "", i)
+            )
+        print(f"  Seeded {len(gallery_files)} gallery photos.")
+
+    # Seed room_photos with existing local images
+    cur.execute("SELECT COUNT(*) FROM room_photos")
+    if cur.fetchone()["count"] == 0:
+        room_defaults = [
+            ("One King",     "/images/one-king.jpg"),
+            ("Two Queen",    "/images/two-queen.jpg"),
+            ("2 Double Bed", "/images/two-double.jpg"),
+        ]
+        for i, (cat, url) in enumerate(room_defaults):
+            cur.execute(
+                "INSERT INTO room_photos (category, url, sort_order) VALUES (%s,%s,%s)",
+                (cat, url, i)
+            )
+        print("  Seeded default room photos.")
+
     # Seed rooms if empty
     cur.execute("SELECT COUNT(*) FROM rooms")
     if cur.fetchone()["count"] == 0:
@@ -623,6 +685,7 @@ def update_content():
 
 # ── Gallery photos ────────────────────────────────────────────────────────────
 
+@app.get("/api/gallery")
 @app.get("/api/admin/gallery")
 def get_gallery():
     con = get_con()
@@ -658,6 +721,7 @@ def delete_gallery_photo(pid):
 
 # ── Room photos ────────────────────────────────────────────────────────────────
 
+@app.get("/api/room-photos")
 @app.get("/api/admin/room-photos")
 def get_room_photos():
     con = get_con()

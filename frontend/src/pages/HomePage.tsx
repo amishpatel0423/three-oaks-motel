@@ -7,6 +7,33 @@ import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import 'swiper/css/pagination';
 
+const API = import.meta.env.VITE_API_URL || 'https://three-oaks-motel-api.onrender.com';
+
+function photoSrc(url: string): string {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  return `${import.meta.env.BASE_URL}${url.replace(/^\//, '')}`;
+}
+
+const DEFAULT_AMENITIES = [
+  { icon: "fa-smoking-ban", text: "Non-smoking rooms" },
+  { icon: "fa-wifi", text: "Free Wifi" },
+  { icon: "fa-parking", text: "Free parking" },
+  { icon: "fa-bell-concierge", text: "Room service" },
+  { icon: "fa-video", text: "CCTV outside" },
+  { icon: "fa-clock", text: "24-hour front desk" },
+  { icon: "fa-building", text: "Smoke-free property" },
+  { icon: "fa-snowflake", text: "Air conditioning" },
+  { icon: "fa-fire", text: "Heating" },
+  { icon: "fa-shield-halved", text: "24-hour security" },
+  { icon: "fa-bell", text: "Smoke alarms" },
+  { icon: "fa-broom", text: "Daily housekeeping" },
+  { icon: "fa-fire-extinguisher", text: "Fire extinguishers" },
+  { icon: "fa-id-card", text: "Key card access" },
+  { icon: "fa-ban", text: "Non-pet friendly" },
+  { icon: "fa-chair", text: "Patio" },
+];
+
 export default function HomePage() {
   const navigate = useNavigate();
   const [loaded, setLoaded] = useState(false);
@@ -18,18 +45,36 @@ export default function HomePage() {
   const [heroCheckOut, setHeroCheckOut] = useState(tomorrow);
   const gallerySwiperRef = useRef<SwiperType | null>(null);
 
-
   const [reviews, setReviews] = useState<{author_name:string; rating:number; text:string; time_ago:string}[]>([]);
+  const [aboutText, setAboutText] = useState('');
+  const [amenities, setAmenities] = useState<string[]>([]);
+  const [galleryPhotos, setGalleryPhotos] = useState<{id:number; url:string; caption:string}[]>([]);
+  const [roomPhotos, setRoomPhotos] = useState<{id:number; category:string; url:string}[]>([]);
 
   useEffect(() => {
     setLoaded(true);
-    fetch(`${import.meta.env.VITE_API_URL || 'https://three-oaks-motel-api.onrender.com'}/api/reviews`)
+
+    // Fetch reviews
+    fetch(`${API}/api/reviews`)
       .then(r => r.json())
       .then(data => { if (Array.isArray(data) && data.length) setReviews(data); })
       .catch(() => {});
-    const handleScroll = () => {
-      setScrollPos(window.scrollY);
-    };
+
+    // Fetch dynamic site content
+    Promise.all([
+      fetch(`${API}/api/content`).then(r => r.json()),
+      fetch(`${API}/api/gallery`).then(r => r.json()),
+      fetch(`${API}/api/room-photos`).then(r => r.json()),
+    ]).then(([content, gallery, rooms]) => {
+      if (content.about) setAboutText(content.about);
+      if (content.amenities) {
+        try { setAmenities(JSON.parse(content.amenities)); } catch {}
+      }
+      if (Array.isArray(gallery) && gallery.length) setGalleryPhotos(gallery);
+      if (Array.isArray(rooms) && rooms.length) setRoomPhotos(rooms);
+    }).catch(() => {});
+
+    const handleScroll = () => setScrollPos(window.scrollY);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -191,12 +236,20 @@ export default function HomePage() {
           <div>
             <h3 className="text-3xl font-display font-bold text-slate-900 mb-4">About Us</h3>
             <div className="w-16 h-1 bg-ocean rounded-full mb-6" />
-            <p className="text-slate-600 leading-relaxed text-lg mb-4">
-              Welcome to the Three Oaks Motel, your premier Florida Coastal retreat. Perfectly positioned just minutes away from the legendary Kennedy Space Center, we offer a peaceful and comfortable stay for space enthusiasts, families, and beachgoers alike.
-            </p>
-            <p className="text-slate-600 leading-relaxed text-lg">
-              Experience authentic local hospitality with modern conveniences designed to make your mission a success. Whether you're here to catch a launch or enjoy the sun, we're ready to host you.
-            </p>
+            {aboutText ? (
+              aboutText.split('\n\n').map((para, i) => (
+                <p key={i} className="text-slate-600 leading-relaxed text-lg mb-4">{para}</p>
+              ))
+            ) : (
+              <>
+                <p className="text-slate-600 leading-relaxed text-lg mb-4">
+                  Welcome to the Three Oaks Motel, your premier Florida Coastal retreat. Perfectly positioned just minutes away from the legendary Kennedy Space Center, we offer a peaceful and comfortable stay for space enthusiasts, families, and beachgoers alike.
+                </p>
+                <p className="text-slate-600 leading-relaxed text-lg">
+                  Experience authentic local hospitality with modern conveniences designed to make your mission a success. Whether you're here to catch a launch or enjoy the sun, we're ready to host you.
+                </p>
+              </>
+            )}
           </div>
 
           {/* Amenities */}
@@ -204,24 +257,14 @@ export default function HomePage() {
             <h3 className="text-3xl font-display font-bold text-slate-900 mb-4">Property Amenities</h3>
             <div className="w-16 h-1 bg-ocean rounded-full mb-6" />
             <div className="grid grid-cols-2 gap-y-6 gap-x-8">
-              {[
-                { icon: "fa-smoking-ban", text: "Non-smoking rooms" },
-                { icon: "fa-wifi", text: "Free Wifi" },
-                { icon: "fa-parking", text: "Free parking" },
-                { icon: "fa-bell-concierge", text: "Room service" },
-                { icon: "fa-video", text: "CCTV outside" },
-                { icon: "fa-clock", text: "24-hour front desk" },
-                { icon: "fa-building", text: "Smoke-free property" },
-                { icon: "fa-snowflake", text: "Air conditioning" },
-                { icon: "fa-fire", text: "Heating" },
-                { icon: "fa-shield-halved", text: "24-hour security" },
-                { icon: "fa-bell", text: "Smoke alarms" },
-                { icon: "fa-broom", text: "Daily housekeeping" },
-                { icon: "fa-fire-extinguisher", text: "Fire extinguishers" },
-                { icon: "fa-id-card", text: "Key card access" },
-                { icon: "fa-ban", text: "Non-pet friendly" },
-                { icon: "fa-chair", text: "Patio" }
-              ].map((amenity, idx) => (
+              {amenities.length > 0 ? amenities.map((text, idx) => (
+                <div key={idx} className="flex items-center gap-3 text-slate-700 hover:text-ocean transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-sky-light flex items-center justify-center text-ocean shadow-sm">
+                    <i className="fas fa-check"></i>
+                  </div>
+                  <span className="font-medium text-sm md:text-base">{text}</span>
+                </div>
+              )) : DEFAULT_AMENITIES.map((amenity, idx) => (
                 <div key={idx} className="flex items-center gap-3 text-slate-700 hover:text-ocean transition-colors">
                   <div className="w-10 h-10 rounded-full bg-sky-light flex items-center justify-center text-ocean shadow-sm">
                     <i className={`fas ${amenity.icon}`}></i>
@@ -246,26 +289,29 @@ export default function HomePage() {
           {[
             {
               title: "One King",
-              image: "./images/one-king.jpg",
+              fallback: "images/one-king.jpg",
               price: "Call for Rates",
               desc: "A spacious king bed perfect for solo travelers or couples."
             },
             {
               title: "Two Queen",
-              image: "./images/two-queen.jpg",
+              fallback: "images/two-queen.jpg",
               price: "Call for Rates",
               desc: "Two spacious queen beds, ideal for families or small groups."
             },
             {
               title: "2 Double Bed",
-              image: "./images/two-double.jpg",
+              fallback: "images/two-double.jpg",
               price: "Call for Rates",
               desc: "Two full beds with a comfortable layout for your stay."
             }
-          ].map((room, idx) => (
+          ].map((room, idx) => {
+            const dbPhoto = roomPhotos.find(p => p.category === room.title);
+            const imgSrc = dbPhoto ? photoSrc(dbPhoto.url) : `${import.meta.env.BASE_URL}${room.fallback}`;
+            return (
             <div key={idx} className="glass-card overflow-hidden hover:shadow-2xl transition-shadow duration-500 flex flex-col h-full">
               <div className="h-64 overflow-hidden relative group">
-                <img src={`${import.meta.env.BASE_URL}${room.image.replace('./', '')}`} alt={room.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                <img src={imgSrc} alt={room.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 <div className="absolute top-4 right-4 bg-ocean text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
                   {room.price}
                 </div>
@@ -285,7 +331,8 @@ export default function HomePage() {
                 <Link to="/booking" className="btn-primary w-full text-center py-3 block">Book This Room</Link>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       </section>
 
@@ -381,12 +428,12 @@ export default function HomePage() {
               }}
               className="gallery-swiper rounded-2xl"
             >
-              {galleryImages.map((img, i) => (
-                <SwiperSlide key={i}>
+              {(galleryPhotos.length > 0 ? galleryPhotos : galleryImages.map((f, i) => ({ id: i, url: `/images/gallery/${f}`, caption: '' }))).map((photo, i) => (
+                <SwiperSlide key={photo.id}>
                   <div className="overflow-hidden rounded-xl aspect-[4/3] group/img">
                     <img
-                      src={`${import.meta.env.BASE_URL}images/gallery/${img}`}
-                      alt={`Three Oaks Motel photo ${i + 1}`}
+                      src={photoSrc(photo.url)}
+                      alt={photo.caption || `Three Oaks Motel photo ${i + 1}`}
                       loading="lazy"
                       className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700"
                     />
