@@ -1,13 +1,15 @@
+import io
 import os
 import json
 import random
 import string
 import urllib.request
 from datetime import date, timedelta, datetime
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import psycopg2
 import psycopg2.extras
+import openpyxl
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
@@ -102,6 +104,31 @@ def setup_db():
             text        TEXT,
             time_ago    TEXT,
             cached_at   TEXT
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS site_content (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL DEFAULT ''
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS gallery_photos (
+            id         SERIAL PRIMARY KEY,
+            url        TEXT NOT NULL,
+            caption    TEXT NOT NULL DEFAULT '',
+            sort_order INTEGER NOT NULL DEFAULT 0
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS room_photos (
+            id         SERIAL PRIMARY KEY,
+            category   TEXT NOT NULL,
+            url        TEXT NOT NULL,
+            sort_order INTEGER NOT NULL DEFAULT 0
         )
     """)
 
@@ -565,6 +592,180 @@ def get_reviews():
     except Exception as e:
         cur.close(); con.close()
         return jsonify({"error": str(e)}), 500
+
+
+# ── Site content ─────────────────────────────────────────────────────────────
+
+@app.get("/api/content")
+def get_content():
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("SELECT key, value FROM site_content")
+    rows = {r["key"]: r["value"] for r in cur.fetchall()}
+    cur.close(); con.close()
+    return jsonify(rows)
+
+
+@app.put("/api/admin/content")
+def update_content():
+    data = request.get_json()
+    con  = get_con()
+    cur  = con.cursor()
+    for key, value in data.items():
+        cur.execute("""
+            INSERT INTO site_content (key, value) VALUES (%s, %s)
+            ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value
+        """, (key, value if isinstance(value, str) else json.dumps(value)))
+    con.commit()
+    cur.close(); con.close()
+    return jsonify({"message": "Content updated."})
+
+
+# ── Gallery photos ────────────────────────────────────────────────────────────
+
+@app.get("/api/admin/gallery")
+def get_gallery():
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM gallery_photos ORDER BY sort_order, id")
+    rows = cur.fetchall()
+    cur.close(); con.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.post("/api/admin/gallery")
+def add_gallery_photo():
+    data = request.get_json()
+    con  = get_con()
+    cur  = con.cursor()
+    cur.execute(
+        "INSERT INTO gallery_photos (url, caption, sort_order) VALUES (%s,%s,%s) RETURNING *",
+        (data["url"], data.get("caption", ""), data.get("sort_order", 0))
+    )
+    row = cur.fetchone()
+    con.commit(); cur.close(); con.close()
+    return jsonify(dict(row)), 201
+
+
+@app.delete("/api/admin/gallery/<int:pid>")
+def delete_gallery_photo(pid):
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("DELETE FROM gallery_photos WHERE id=%s", (pid,))
+    con.commit(); cur.close(); con.close()
+    return jsonify({"message": "Deleted."})
+
+
+# ── Room photos ────────────────────────────────────────────────────────────────
+
+@app.get("/api/admin/room-photos")
+def get_room_photos():
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM room_photos ORDER BY category, sort_order, id")
+    rows = cur.fetchall()
+    cur.close(); con.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.post("/api/admin/room-photos")
+def add_room_photo():
+    data = request.get_json()
+    con  = get_con()
+    cur  = con.cursor()
+    cur.execute(
+        "INSERT INTO room_photos (category, url, sort_order) VALUES (%s,%s,%s) RETURNING *",
+        (data["category"], data["url"], data.get("sort_order", 0))
+    )
+    row = cur.fetchone()
+    con.commit(); cur.close(); con.close()
+    return jsonify(dict(row)), 201
+
+
+@app.delete("/api/admin/room-photos/<int:pid>")
+def delete_room_photo(pid):
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("DELETE FROM room_photos WHERE id=%s", (pid,))
+    con.commit(); cur.close(); con.close()
+    return jsonify({"message": "Deleted."})
+
+
+# ── Analytics ─────────────────────────────────────────────────────────────────
+
+@app.get("/api/admin/analytics")
+def get_analytics():
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("""
+        SELECT
+            SUBSTRING(check_in_date, 1, 7) AS month,
+            COUNT(*)                        AS bookings,
+            COALESCE(SUM(total_price), 0)   AS revenue
+        FROM bookings
+        WHERE status = 'Approved'
+        GROUP BY month
+        ORDER BY month DESC
+    """)
+    rows = cur.fetchall()
+    cur.close(); con.close()
+    return jsonify([dict(r) for r in rows])
+
+
+# ── Excel export ──────────────────────────────────────────────────────────────
+
+@app.get("/api/admin/export")
+def export_reservations():
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("""
+        SELECT b.reference_number, b.guest_name, b.email, b.phone,
+               b.category, r.room_number AS room,
+               b.check_in_date, b.check_out_date,
+               b.adults, b.kids, b.pets, b.special_requests,
+               b.total_price, b.status, b.created_at
+        FROM bookings b
+        LEFT JOIN rooms r ON b.assigned_room_id = r.id
+        ORDER BY b.created_at DESC
+    """)
+    rows = cur.fetchall()
+    cur.close(); con.close()
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Reservations"
+
+    headers = [
+        "Reference", "Guest Name", "Email", "Phone", "Category", "Room",
+        "Check-In", "Check-Out", "Adults", "Kids", "Pets",
+        "Special Requests", "Total ($)", "Status", "Booked On"
+    ]
+    ws.append(headers)
+
+    # Bold header row
+    from openpyxl.styles import Font
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+
+    for r in rows:
+        ws.append([
+            r["reference_number"], r["guest_name"], r["email"], r["phone"],
+            r["category"], r["room"],
+            r["check_in_date"], r["check_out_date"],
+            r["adults"], r["kids"], r["pets"], r["special_requests"],
+            r["total_price"], r["status"],
+            r["created_at"].split("T")[0] if r["created_at"] else ""
+        ])
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(
+        buf,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name=f"reservations_{date.today().isoformat()}.xlsx"
+    )
 
 
 # ── Health check ─────────────────────────────────────────────────────────────
