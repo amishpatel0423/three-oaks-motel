@@ -78,6 +78,14 @@
 .gallery-swiper .swiper-pagination-bullet-active {
   background: var(--color-ocean);
 }
+@media (max-width: 639px) {
+  .gallery-swiper .swiper-pagination {
+    display: none;
+  }
+  .gallery-swiper {
+    padding-bottom: 0 !important;
+  }
+}
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
