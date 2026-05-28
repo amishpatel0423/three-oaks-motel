@@ -201,8 +201,8 @@ export default function BookingPage() {
 
         {/* ── Date Picker Bar ─────────────────────────────────────────────── */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
-          <h1 className="text-2xl font-display font-bold text-slate-900 mb-1">Find Your Room</h1>
-          <p className="text-slate-500 text-sm mb-6">Select your dates to see availability and pricing.</p>
+          <h1 className="text-2xl font-display font-bold text-slate-900 mb-1 text-center md:text-left">Find Your Room</h1>
+          <p className="text-slate-500 text-sm mb-6 text-center md:text-left">Select your dates to see availability and pricing.</p>
           <div className="flex flex-col sm:flex-row gap-4 items-end">
             <div className="flex-1">
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Check-in</label>
