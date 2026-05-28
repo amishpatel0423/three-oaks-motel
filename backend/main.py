@@ -1058,6 +1058,22 @@ def export_reservations():
     )
 
 
+# ── Force reviews refresh ─────────────────────────────────────────────────────
+
+@app.post("/api/admin/reviews/refresh")
+def refresh_reviews():
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("DELETE FROM reviews_cache")
+    con.commit()
+    cur.close()
+    con.close()
+    # Now call get_reviews() logic to re-fetch immediately
+    from flask import current_app
+    with current_app.test_request_context('/api/reviews'):
+        return get_reviews()
+
+
 # ── Health check ─────────────────────────────────────────────────────────────
 
 @app.get("/")
