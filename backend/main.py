@@ -3,15 +3,22 @@ import os
 import json
 import random
 import string
+import smtplib
+import threading
 import urllib.request
 from datetime import date, timedelta, datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import psycopg2
 import psycopg2.extras
 import openpyxl
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "")
+DATABASE_URL   = os.environ.get("DATABASE_URL", "")
+EMAIL_USER     = os.environ.get("EMAIL_USER", "")
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "")
+ADMIN_EMAIL    = "amishpatel0423@gmail.com"
 
 # ── Google Reviews config ─────────────────────────────────────────────────────
 GOOGLE_API_KEY      = os.environ.get("GOOGLE_API_KEY", "AIzaSyBy7FZLlpJ0HrcIipvP9vYOlmAVA0HFxDk")
@@ -286,6 +293,209 @@ def available_rooms(category, check_in, check_out):
     return result
 
 
+# ── Email helpers ─────────────────────────────────────────────────────────────
+
+def send_email(to: str, subject: str, html: str):
+    if not EMAIL_USER or not EMAIL_PASSWORD:
+        print("EMAIL_USER / EMAIL_PASSWORD not set — skipping email.")
+        return
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = f"Three Oaks Motel <{EMAIL_USER}>"
+        msg["To"]      = to
+        msg.attach(MIMEText(html, "html"))
+        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.login(EMAIL_USER, EMAIL_PASSWORD)
+            smtp.sendmail(EMAIL_USER, to, msg.as_string())
+        print(f"Email sent to {to}: {subject}")
+    except Exception as e:
+        print(f"Email error ({to}): {e}")
+
+
+def fmt_date(iso: str) -> str:
+    months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    y, m, d = iso.split("-")
+    return f"{months[int(m)-1]} {int(d)}, {y}"
+
+
+def send_booking_emails(d: dict):
+    ref   = d["reference_number"]
+    name  = d["guest_name"]
+    ci    = fmt_date(d["check_in_date"])
+    co    = fmt_date(d["check_out_date"])
+    total = f"${d['total_price']:.2f}" if d.get("total_price") is not None else "TBD"
+    cat   = d["category"]
+    sr    = d.get("special_requests") or "None"
+
+    # ── Guest confirmation ────────────────────────────────────────────────────
+    guest_html = f"""
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f0f8ff;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f8ff;padding:32px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+        <!-- Header -->
+        <tr><td style="background:#006994;padding:32px 40px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">Three Oaks Motel</h1>
+          <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">707 S. Hopkins Ave, Titusville, FL 32780</p>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="padding:40px 40px 32px;">
+          <p style="margin:0 0 6px;color:#64748b;font-size:13px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">Booking Received</p>
+          <h2 style="margin:0 0 24px;color:#0f172a;font-size:28px;font-weight:800;">Hi {name},</h2>
+          <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
+            Thank you for choosing Three Oaks Motel. Your booking request has been received and is pending confirmation. We'll be in touch shortly.
+          </p>
+
+          <!-- Reference -->
+          <div style="background:#f0f8ff;border:2px solid #006994;border-radius:12px;padding:20px 24px;margin-bottom:28px;text-align:center;">
+            <p style="margin:0 0 4px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;">Your Reference Number</p>
+            <p style="margin:0;color:#006994;font-size:28px;font-weight:900;font-family:monospace;letter-spacing:2px;">{ref}</p>
+          </div>
+
+          <!-- Summary -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:12px;overflow:hidden;margin-bottom:28px;">
+            <tr><td style="padding:16px 20px;border-bottom:1px solid #e2e8f0;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Room</span><br>
+              <span style="color:#0f172a;font-size:15px;font-weight:600;">{cat}</span>
+            </td></tr>
+            <tr><td style="padding:16px 20px;border-bottom:1px solid #e2e8f0;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Check-in</span><br>
+              <span style="color:#0f172a;font-size:15px;font-weight:600;">{ci} <span style="color:#64748b;font-weight:400;">from 2:00 PM</span></span>
+            </td></tr>
+            <tr><td style="padding:16px 20px;border-bottom:1px solid #e2e8f0;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Check-out</span><br>
+              <span style="color:#0f172a;font-size:15px;font-weight:600;">{co} <span style="color:#64748b;font-weight:400;">by 11:00 AM</span></span>
+            </td></tr>
+            <tr><td style="padding:16px 20px;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Estimated Total</span><br>
+              <span style="color:#006994;font-size:18px;font-weight:800;">{total}</span>
+            </td></tr>
+          </table>
+
+          <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin-bottom:28px;">
+            <p style="margin:0;color:#92400e;font-size:13px;line-height:1.6;">
+              <strong>Note:</strong> A deposit is required at check-in. Your booking is pending — we will call or email to confirm.
+            </p>
+          </div>
+
+          <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
+            Questions? Call us at <a href="tel:3212676272" style="color:#006994;font-weight:600;">(321) 267-6272</a> or email
+            <a href="mailto:threeoaksmotel707@gmail.com" style="color:#006994;font-weight:600;">threeoaksmotel707@gmail.com</a>.
+          </p>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="background:#f8fafc;padding:20px 40px;text-align:center;border-top:1px solid #e2e8f0;">
+          <p style="margin:0;color:#94a3b8;font-size:12px;">© {datetime.now().year} Three Oaks Motel · 707 S. Hopkins Ave, Titusville, FL 32780</p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+    # ── Admin notification ────────────────────────────────────────────────────
+    adults = d.get("adults", 1)
+    kids   = d.get("kids", 0)
+    admin_html = f"""
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f0f8ff;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f8ff;padding:32px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+        <tr><td style="background:#0f172a;padding:24px 32px;">
+          <h2 style="margin:0;color:#ffffff;font-size:18px;font-weight:700;">New Booking Request</h2>
+          <p style="margin:4px 0 0;color:#94a3b8;font-size:13px;">Three Oaks Motel · Admin Notification</p>
+        </td></tr>
+
+        <tr><td style="padding:32px;">
+
+          <div style="background:#f0f8ff;border:2px solid #006994;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+            <p style="margin:0 0 2px;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;">Reference</p>
+            <p style="margin:0;color:#006994;font-size:22px;font-weight:900;font-family:monospace;">{ref}</p>
+          </div>
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+            <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;width:40%;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Guest</span>
+            </td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#0f172a;font-size:14px;font-weight:600;">{name}</span>
+            </td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Email</span>
+            </td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <a href="mailto:{d['email']}" style="color:#006994;font-size:14px;">{d['email']}</a>
+            </td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Phone</span>
+            </td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <a href="tel:{d['phone']}" style="color:#006994;font-size:14px;">{d['phone']}</a>
+            </td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Room</span>
+            </td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#0f172a;font-size:14px;font-weight:600;">{cat}</span>
+            </td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Check-in</span>
+            </td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#0f172a;font-size:14px;">{ci}</span>
+            </td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Check-out</span>
+            </td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#0f172a;font-size:14px;">{co}</span>
+            </td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Total</span>
+            </td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#006994;font-size:14px;font-weight:700;">{total}</span>
+            </td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Guests</span>
+            </td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#0f172a;font-size:14px;">{adults} adult{'s' if adults != 1 else ''}{f', {kids} child' + ('ren' if kids != 1 else '') if kids else ''}</span>
+            </td></tr>
+            <tr><td style="padding:8px 0;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Special Requests</span>
+            </td><td style="padding:8px 0;">
+              <span style="color:#0f172a;font-size:14px;font-style:italic;">{sr}</span>
+            </td></tr>
+          </table>
+
+          <a href="https://three-oaks-motel.vercel.app/admin" style="display:inline-block;background:#006994;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:700;">
+            View Admin Dashboard →
+          </a>
+
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+    send_email(
+        d["email"],
+        f"Booking Received — Three Oaks Motel | Ref: {ref}",
+        guest_html,
+    )
+    send_email(
+        ADMIN_EMAIL,
+        f"New Booking Request — {ref}",
+        admin_html,
+    )
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.get("/api/availability")
@@ -360,6 +570,22 @@ def create_booking():
     con.commit()
     cur.close()
     con.close()
+
+    booking_data = {
+        "reference_number": row["reference_number"],
+        "guest_name":       data["guest_name"],
+        "email":            data["email"],
+        "phone":            data["phone"],
+        "category":         data["category"],
+        "check_in_date":    data["check_in_date"],
+        "check_out_date":   data["check_out_date"],
+        "total_price":      data.get("total_price"),
+        "adults":           data.get("adults", 1),
+        "kids":             data.get("kids", 0),
+        "special_requests": data.get("special_requests", ""),
+    }
+    threading.Thread(target=send_booking_emails, args=(booking_data,), daemon=True).start()
+
     return jsonify({"message": "Booking received.", "booking_id": row["id"], "reference_number": row["reference_number"]}), 201
 
 
