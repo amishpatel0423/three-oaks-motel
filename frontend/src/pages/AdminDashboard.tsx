@@ -551,6 +551,17 @@ export default function AdminDashboard() {
             Sync
           </button>
           <div className="h-6 w-px bg-slate-200" />
+          <button
+            onClick={async () => {
+              await fetch(`${API}/api/admin/reviews/refresh`, { method: 'POST' });
+              alert('Google reviews refreshed!');
+            }}
+            className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-ocean transition-colors"
+          >
+            <RefreshCw size={16} />
+            Refresh Reviews
+          </button>
+          <div className="h-6 w-px bg-slate-200" />
           <Link to="/" className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
             <Home size={16} /> View Site
           </Link>
