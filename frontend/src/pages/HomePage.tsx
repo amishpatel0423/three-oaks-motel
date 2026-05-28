@@ -415,6 +415,7 @@ export default function HomePage() {
             </button>
 
             <Swiper
+              key={galleryPhotos.length > 0 ? 'db' : 'local'}
               onSwiper={(swiper) => { gallerySwiperRef.current = swiper; }}
               modules={[Autoplay, Pagination]}
               slidesPerView={1.3}
