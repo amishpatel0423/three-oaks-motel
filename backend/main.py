@@ -2,6 +2,7 @@ import io
 import os
 import json
 import random
+import secrets
 import string
 import smtplib
 import threading
@@ -102,6 +103,8 @@ def setup_db():
             special_requests TEXT NOT NULL DEFAULT ''
         )
     """)
+
+    cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancel_token TEXT")
 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS reviews_cache (
@@ -321,6 +324,22 @@ def fmt_date(iso: str) -> str:
     return f"{months[int(m)-1]} {int(d)}, {y}"
 
 
+SITE_URL = "https://three-oaks-motel.vercel.app"
+
+
+def _cancel_link_html(cancel_token: str) -> str:
+    if not cancel_token:
+        return ""
+    url = f"{SITE_URL}/cancel?token={cancel_token}"
+    return f"""
+          <div style="text-align:center;margin-bottom:20px;">
+            <a href="{url}" style="display:inline-block;background:#f8fafc;color:#64748b;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:13px;border:1px solid #e2e8f0;">
+              Need to cancel? Click here → <span style="color:#dc2626;font-weight:600;">Cancel Reservation</span>
+            </a>
+            <p style="margin:6px 0 0;color:#94a3b8;font-size:11px;">Cancellation is only available more than 24 hours before check-in.</p>
+          </div>"""
+
+
 def send_booking_emails(d: dict):
     ref   = d["reference_number"]
     name  = d["guest_name"]
@@ -329,6 +348,7 @@ def send_booking_emails(d: dict):
     total = f"${d['total_price']:.2f}" if d.get("total_price") is not None else "TBD"
     cat   = d["category"]
     sr    = d.get("special_requests") or "None"
+    cancel_html = _cancel_link_html(d.get("cancel_token", ""))
 
     # ── Guest confirmation ────────────────────────────────────────────────────
     guest_html = f"""
@@ -378,6 +398,8 @@ def send_booking_emails(d: dict):
               <span style="color:#006994;font-size:18px;font-weight:800;">{total}</span>
             </td></tr>
           </table>
+
+          {cancel_html}
 
           <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin-bottom:28px;">
             <p style="margin:0;color:#92400e;font-size:13px;line-height:1.6;">
@@ -496,6 +518,184 @@ def send_booking_emails(d: dict):
     )
 
 
+def send_approval_email(b: dict):
+    ref          = b["reference_number"]
+    name         = b["guest_name"]
+    ci           = fmt_date(b["check_in_date"])
+    co           = fmt_date(b["check_out_date"])
+    total        = f"${b['total_price']:.2f}" if b.get("total_price") is not None else "TBD"
+    room_num     = b.get("room_number", "")
+    cancel_html  = _cancel_link_html(b.get("cancel_token", ""))
+    room_line    = f"Room <strong>{room_num}</strong> — {b['category']}" if room_num else b["category"]
+
+    html = f"""
+<!DOCTYPE html><html>
+<body style="margin:0;padding:0;background:#f0f8ff;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f8ff;padding:32px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <tr><td style="background:#16a34a;padding:32px 40px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">Booking Confirmed!</h1>
+          <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">Three Oaks Motel · 707 S. Hopkins Ave, Titusville, FL 32780</p>
+        </td></tr>
+        <tr><td style="padding:40px 40px 32px;">
+          <h2 style="margin:0 0 16px;color:#0f172a;font-size:24px;">Hi {name},</h2>
+          <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">Great news — your reservation has been confirmed. We look forward to welcoming you!</p>
+          <div style="background:#f0f8ff;border:2px solid #16a34a;border-radius:12px;padding:20px 24px;margin-bottom:28px;text-align:center;">
+            <p style="margin:0 0 4px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;">Reference Number</p>
+            <p style="margin:0;color:#16a34a;font-size:28px;font-weight:900;font-family:monospace;letter-spacing:2px;">{ref}</p>
+          </div>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:12px;margin-bottom:28px;">
+            <tr><td style="padding:16px 20px;border-bottom:1px solid #e2e8f0;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Room</span><br>
+              <span style="color:#0f172a;font-size:15px;font-weight:600;">{room_line}</span>
+            </td></tr>
+            <tr><td style="padding:16px 20px;border-bottom:1px solid #e2e8f0;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Check-in</span><br>
+              <span style="color:#0f172a;font-size:15px;font-weight:600;">{ci} <span style="color:#64748b;font-weight:400;">from 2:00 PM</span></span>
+            </td></tr>
+            <tr><td style="padding:16px 20px;border-bottom:1px solid #e2e8f0;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Check-out</span><br>
+              <span style="color:#0f172a;font-size:15px;font-weight:600;">{co} <span style="color:#64748b;font-weight:400;">by 11:00 AM</span></span>
+            </td></tr>
+            <tr><td style="padding:16px 20px;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Total</span><br>
+              <span style="color:#16a34a;font-size:18px;font-weight:800;">{total}</span>
+            </td></tr>
+          </table>
+          <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin-bottom:24px;">
+            <p style="margin:0;color:#92400e;font-size:13px;">A deposit is required at check-in. Please call <a href="tel:3212676272" style="color:#92400e;">(321) 267-6272</a> with any questions.</p>
+          </div>
+          {cancel_html}
+        </td></tr>
+        <tr><td style="background:#f8fafc;padding:20px 40px;text-align:center;border-top:1px solid #e2e8f0;">
+          <p style="margin:0;color:#94a3b8;font-size:12px;">© {datetime.now().year} Three Oaks Motel</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>"""
+    send_email(b["email"], f"Booking Confirmed — Three Oaks Motel | Ref: {ref}", html)
+
+
+def send_rejection_email(b: dict):
+    ref  = b["reference_number"]
+    name = b["guest_name"]
+    html = f"""
+<!DOCTYPE html><html>
+<body style="margin:0;padding:0;background:#f0f8ff;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f8ff;padding:32px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <tr><td style="background:#006994;padding:32px 40px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">Three Oaks Motel</h1>
+          <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">Booking Update · Ref: {ref}</p>
+        </td></tr>
+        <tr><td style="padding:40px 40px 32px;">
+          <h2 style="margin:0 0 16px;color:#0f172a;font-size:22px;">Hi {name},</h2>
+          <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.6;">
+            Thank you for your interest in staying with us. Unfortunately, we were unable to accommodate your booking request at this time.
+          </p>
+          <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
+            We apologize for any inconvenience. Please don't hesitate to contact us directly — we'd love to help find an alternative arrangement.
+          </p>
+          <div style="text-align:center;margin-bottom:24px;">
+            <a href="tel:3212676272" style="display:inline-block;background:#006994;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;">
+              Call Us: (321) 267-6272
+            </a>
+          </div>
+          <p style="margin:0;color:#64748b;font-size:13px;text-align:center;">
+            Or email us at <a href="mailto:threeoaksmotel707@gmail.com" style="color:#006994;">threeoaksmotel707@gmail.com</a>
+          </p>
+        </td></tr>
+        <tr><td style="background:#f8fafc;padding:20px 40px;text-align:center;border-top:1px solid #e2e8f0;">
+          <p style="margin:0;color:#94a3b8;font-size:12px;">© {datetime.now().year} Three Oaks Motel · 707 S. Hopkins Ave, Titusville, FL 32780</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>"""
+    send_email(b["email"], f"Booking Update — Three Oaks Motel | Ref: {ref}", html)
+
+
+def send_cancellation_emails(b: dict):
+    ref  = b["reference_number"]
+    name = b["guest_name"]
+    ci   = fmt_date(b["check_in_date"])
+    co   = fmt_date(b["check_out_date"])
+    cat  = b["category"]
+
+    guest_html = f"""
+<!DOCTYPE html><html>
+<body style="margin:0;padding:0;background:#f0f8ff;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f8ff;padding:32px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <tr><td style="background:#64748b;padding:32px 40px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">Reservation Cancelled</h1>
+          <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">Three Oaks Motel · Ref: {ref}</p>
+        </td></tr>
+        <tr><td style="padding:40px 40px 32px;">
+          <h2 style="margin:0 0 16px;color:#0f172a;font-size:22px;">Hi {name},</h2>
+          <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.6;">
+            Your reservation has been successfully cancelled. We're sorry to see you go!
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:12px;margin-bottom:28px;">
+            <tr><td style="padding:14px 20px;border-bottom:1px solid #e2e8f0;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Reference</span><br>
+              <span style="color:#0f172a;font-size:14px;font-family:monospace;font-weight:700;">{ref}</span>
+            </td></tr>
+            <tr><td style="padding:14px 20px;border-bottom:1px solid #e2e8f0;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Room</span><br>
+              <span style="color:#0f172a;font-size:14px;">{cat}</span>
+            </td></tr>
+            <tr><td style="padding:14px 20px;border-bottom:1px solid #e2e8f0;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Check-in</span><br>
+              <span style="color:#0f172a;font-size:14px;">{ci}</span>
+            </td></tr>
+            <tr><td style="padding:14px 20px;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Check-out</span><br>
+              <span style="color:#0f172a;font-size:14px;">{co}</span>
+            </td></tr>
+          </table>
+          <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
+            We hope to welcome you in the future. Call us anytime at
+            <a href="tel:3212676272" style="color:#006994;font-weight:600;">(321) 267-6272</a>.
+          </p>
+        </td></tr>
+        <tr><td style="background:#f8fafc;padding:20px 40px;text-align:center;border-top:1px solid #e2e8f0;">
+          <p style="margin:0;color:#94a3b8;font-size:12px;">© {datetime.now().year} Three Oaks Motel</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>"""
+
+    admin_html = f"""
+<!DOCTYPE html><html>
+<body style="margin:0;padding:0;background:#f0f8ff;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f8ff;padding:32px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <tr><td style="background:#dc2626;padding:24px 32px;">
+          <h2 style="margin:0;color:#ffffff;font-size:18px;font-weight:700;">Guest Cancelled — {ref}</h2>
+        </td></tr>
+        <tr><td style="padding:28px 32px;">
+          <p style="margin:0 0 12px;color:#475569;"><strong>{name}</strong> cancelled their reservation.</p>
+          <p style="margin:0 0 4px;color:#64748b;font-size:13px;">Room: {cat} · {ci} → {co}</p>
+          <p style="margin:16px 0 0;">
+            <a href="{SITE_URL}/admin" style="display:inline-block;background:#006994;color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;">View Admin Dashboard →</a>
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>"""
+
+    send_email(b["email"], f"Reservation Cancelled — Three Oaks Motel | Ref: {ref}", guest_html)
+    send_email(ADMIN_EMAIL, f"Guest Cancelled — {ref}", admin_html)
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.get("/api/availability")
@@ -547,14 +747,15 @@ def get_availability():
 
 @app.post("/api/bookings")
 def create_booking():
-    data = request.get_json()
+    data         = request.get_json()
+    cancel_token = secrets.token_urlsafe(32)
     con  = get_con()
     cur  = con.cursor()
     cur.execute("""
         INSERT INTO bookings (reference_number, guest_name, email, phone, category,
             check_in_date, check_out_date, total_price, status, created_at,
-            adults, kids, pets, special_requests)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'Pending',%s,%s,%s,%s,%s)
+            adults, kids, pets, special_requests, cancel_token)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'Pending',%s,%s,%s,%s,%s,%s)
         RETURNING id, reference_number
     """, (
         gen_ref(),
@@ -565,6 +766,7 @@ def create_booking():
         data.get("kids", 0),
         1 if data.get("pets") else 0,
         data.get("special_requests", ""),
+        cancel_token,
     ))
     row = cur.fetchone()
     con.commit()
@@ -583,6 +785,7 @@ def create_booking():
         "adults":           data.get("adults", 1),
         "kids":             data.get("kids", 0),
         "special_requests": data.get("special_requests", ""),
+        "cancel_token":     cancel_token,
     }
     threading.Thread(target=send_booking_emails, args=(booking_data,), daemon=True).start()
 
@@ -670,6 +873,10 @@ def approve_booking(bid):
     con.commit()
     cur.close()
     con.close()
+
+    approval_data = {**dict(b), "room_number": room["room_number"]}
+    threading.Thread(target=send_approval_email, args=(approval_data,), daemon=True).start()
+
     return jsonify({"message": f"Approved. Room {room['room_number']} assigned."})
 
 
@@ -677,11 +884,70 @@ def approve_booking(bid):
 def reject_booking(bid):
     con = get_con()
     cur = con.cursor()
+    cur.execute("SELECT * FROM bookings WHERE id=%s", (bid,))
+    b = cur.fetchone()
     cur.execute("UPDATE bookings SET status='Rejected' WHERE id=%s", (bid,))
     con.commit()
     cur.close()
     con.close()
+    if b:
+        threading.Thread(target=send_rejection_email, args=(dict(b),), daemon=True).start()
     return jsonify({"message": "Rejected."})
+
+
+# ── Guest cancellation ────────────────────────────────────────────────────────
+
+def _can_cancel(check_in_date: str) -> bool:
+    ci = datetime.fromisoformat(check_in_date + "T14:00:00")
+    return (ci - datetime.now()) > timedelta(hours=24)
+
+
+@app.get("/api/bookings/cancel/<token>")
+def get_cancel_info(token):
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM bookings WHERE cancel_token=%s", (token,))
+    b = cur.fetchone()
+    cur.close(); con.close()
+    if not b:
+        return jsonify({"error": "Invalid or expired cancellation link."}), 404
+    if b["status"] == "Cancelled":
+        return jsonify({"error": "This reservation has already been cancelled."}), 409
+    if b["status"] == "Rejected":
+        return jsonify({"error": "This reservation was not confirmed."}), 409
+    can = _can_cancel(b["check_in_date"])
+    return jsonify({
+        "reference_number": b["reference_number"],
+        "guest_name":       b["guest_name"],
+        "category":         b["category"],
+        "check_in_date":    b["check_in_date"],
+        "check_out_date":   b["check_out_date"],
+        "total_price":      b["total_price"],
+        "status":           b["status"],
+        "can_cancel":       can,
+    })
+
+
+@app.post("/api/bookings/cancel/<token>")
+def do_cancel(token):
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM bookings WHERE cancel_token=%s", (token,))
+    b = cur.fetchone()
+    if not b:
+        cur.close(); con.close()
+        return jsonify({"error": "Invalid or expired cancellation link."}), 404
+    if b["status"] not in ("Pending", "Approved"):
+        cur.close(); con.close()
+        return jsonify({"error": f"Cannot cancel a booking with status '{b['status']}'."}), 409
+    if not _can_cancel(b["check_in_date"]):
+        cur.close(); con.close()
+        return jsonify({"error": "Cancellation window has passed (within 24 hours of check-in). Please call (321) 267-6272."}), 400
+    cur.execute("UPDATE bookings SET status='Cancelled' WHERE id=%s", (b["id"],))
+    con.commit()
+    cur.close(); con.close()
+    threading.Thread(target=send_cancellation_emails, args=(dict(b),), daemon=True).start()
+    return jsonify({"message": "Reservation cancelled successfully."})
 
 
 @app.get("/api/admin/pricing")
