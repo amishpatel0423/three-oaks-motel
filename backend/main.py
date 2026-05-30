@@ -10,6 +10,7 @@ import urllib.error
 from datetime import date, timedelta, datetime
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
 import psycopg2.extras
 import openpyxl
@@ -223,6 +224,24 @@ def setup_db():
             "INSERT INTO category_rates (category, default_nightly_rate) VALUES (%s, %s)", rates
         )
         print("  Seeded default nightly rates.")
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS admin_users (
+            id            SERIAL PRIMARY KEY,
+            username      TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role          TEXT NOT NULL DEFAULT 'associate',
+            created_at    TEXT
+        )
+    """)
+
+    cur.execute("SELECT COUNT(*) FROM admin_users")
+    if cur.fetchone()["count"] == 0:
+        cur.execute(
+            "INSERT INTO admin_users (username, password_hash, role, created_at) VALUES (%s,%s,%s,%s)",
+            ("admin", generate_password_hash("1234"), "owner", datetime.now().isoformat(timespec="seconds"))
+        )
+        print("  Seeded default owner account (admin/1234).")
 
     con.commit()
     cur.close()
@@ -1395,6 +1414,89 @@ def refresh_reviews():
     from flask import current_app
     with current_app.test_request_context('/api/reviews'):
         return get_reviews()
+
+
+# ── Admin auth & user management ─────────────────────────────────────────────
+
+@app.post("/api/admin/login")
+def admin_login():
+    data = request.get_json(silent=True) or {}
+    username = data.get("username", "").strip()
+    password = data.get("password", "")
+    if not username or not password:
+        return jsonify({"error": "Username and password required."}), 400
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM admin_users WHERE username=%s", (username,))
+    user = cur.fetchone()
+    cur.close(); con.close()
+    if not user or not check_password_hash(user["password_hash"], password):
+        return jsonify({"error": "Incorrect username or password."}), 401
+    return jsonify({"role": user["role"], "username": user["username"]})
+
+
+@app.get("/api/admin/users")
+def list_admin_users():
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("SELECT id, username, role, created_at FROM admin_users ORDER BY id")
+    rows = cur.fetchall()
+    cur.close(); con.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.post("/api/admin/users")
+def create_admin_user():
+    data = request.get_json(silent=True) or {}
+    username = data.get("username", "").strip()
+    password = data.get("password", "")
+    role     = data.get("role", "associate")
+    if not username or not password:
+        return jsonify({"error": "Username and password required."}), 400
+    if role not in ("associate", "manager", "owner"):
+        return jsonify({"error": "Invalid role."}), 400
+    con = get_con()
+    cur = con.cursor()
+    try:
+        cur.execute(
+            "INSERT INTO admin_users (username, password_hash, role, created_at) VALUES (%s,%s,%s,%s) RETURNING id, username, role, created_at",
+            (username, generate_password_hash(password), role, datetime.now().isoformat(timespec="seconds"))
+        )
+        row = cur.fetchone()
+        con.commit()
+    except Exception as e:
+        cur.close(); con.close()
+        return jsonify({"error": "Username already exists."}), 409
+    cur.close(); con.close()
+    return jsonify(dict(row)), 201
+
+
+@app.delete("/api/admin/users/<int:uid>")
+def delete_admin_user(uid):
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("DELETE FROM admin_users WHERE id=%s", (uid,))
+    con.commit()
+    cur.close(); con.close()
+    return jsonify({"message": "Deleted."})
+
+
+@app.patch("/api/admin/users/<int:uid>")
+def update_admin_user(uid):
+    data = request.get_json(silent=True) or {}
+    con  = get_con()
+    cur  = con.cursor()
+    if "role" in data:
+        if data["role"] not in ("associate", "manager", "owner"):
+            cur.close(); con.close()
+            return jsonify({"error": "Invalid role."}), 400
+        cur.execute("UPDATE admin_users SET role=%s WHERE id=%s", (data["role"], uid))
+    if "password" in data and data["password"]:
+        cur.execute("UPDATE admin_users SET password_hash=%s WHERE id=%s",
+                    (generate_password_hash(data["password"]), uid))
+    con.commit()
+    cur.close(); con.close()
+    return jsonify({"message": "Updated."})
 
 
 # ── Health check ─────────────────────────────────────────────────────────────

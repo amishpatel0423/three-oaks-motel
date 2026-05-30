@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Home, Check, X, LayoutDashboard, Calendar, RefreshCw, DollarSign, BedDouble, CalendarDays, ChevronLeft, ChevronRight, Save, BarChart2, FileText, Trash2, Plus, Image } from 'lucide-react';
+import { Home, Check, X, LayoutDashboard, Calendar, RefreshCw, DollarSign, BedDouble, CalendarDays, ChevronLeft, ChevronRight, Save, BarChart2, FileText, Trash2, Plus, Image, Users, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const API = import.meta.env.VITE_API_URL || 'https://three-oaks-motel-api.onrender.com';
@@ -61,24 +61,43 @@ interface AnalyticsRow {
   revenue: number;
 }
 
-type Tab       = 'dashboard' | 'occupancy' | 'calendar' | 'content' | 'analytics';
+type Tab       = 'dashboard' | 'occupancy' | 'calendar' | 'content' | 'analytics' | 'users';
+type Role      = 'associate' | 'manager' | 'owner';
+
+const ROLE_TABS: Record<Role, Tab[]> = {
+  associate: ['dashboard', 'occupancy'],
+  manager:   ['dashboard', 'occupancy', 'calendar'],
+  owner:     ['dashboard', 'occupancy', 'calendar', 'content', 'analytics', 'users'],
+};
 type DayFilter = 'yesterday' | 'today' | 'tomorrow';
 type SubTab    = 'arrivals' | 'departures' | 'stayovers' | 'new_bookings';
 
 const CATEGORIES = ['One King', 'Two Queen', '2 Double Bed'];
 
-function LoginScreen({ onLogin }: { onLogin: () => void }) {
+function LoginScreen({ onLogin }: { onLogin: (role: Role) => void }) {
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (user === 'admin' && pass === '1234') {
+    setLoading(true); setError('');
+    try {
+      const res = await fetch(`${API}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: user, password: pass }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Login failed.'); return; }
       sessionStorage.setItem('admin_auth', '1');
-      onLogin();
-    } else {
-      setError('Incorrect username or password.');
+      sessionStorage.setItem('admin_role', data.role);
+      onLogin(data.role as Role);
+    } catch {
+      setError('Cannot connect to server. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -115,9 +134,10 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"
-            className="w-full bg-ocean hover:bg-ocean-dark text-white font-semibold py-2.5 rounded-lg transition-colors"
+            disabled={loading}
+            className="w-full bg-ocean hover:bg-ocean-dark text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-60"
           >
-            Sign In
+            {loading ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
       </div>
@@ -266,7 +286,12 @@ function PhotoGrid({
 
 export default function AdminDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('admin_auth') === '1');
-  const [tab, setTab]             = useState<Tab>('dashboard');
+  const [role, setRole]           = useState<Role>(() => (sessionStorage.getItem('admin_role') as Role) || 'associate');
+  const allowedTabs               = ROLE_TABS[role] || ROLE_TABS.associate;
+  const [tab, setTab]             = useState<Tab>(() => {
+    const saved = sessionStorage.getItem('admin_role') as Role;
+    return ROLE_TABS[saved]?.[0] || 'dashboard';
+  });
   const [dayFilter, setDayFilter] = useState<DayFilter>('today');
   const [subTab, setSubTab]       = useState<SubTab>('arrivals');
   const [loading, setLoading]     = useState(true);
@@ -305,6 +330,15 @@ export default function AdminDashboard() {
   const [analyticsData, setAnalyticsData]   = useState<AnalyticsRow[]>([]);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [exporting, setExporting]           = useState(false);
+
+  // Users tab state
+  interface AdminUser { id: number; username: string; role: string; created_at: string | null; }
+  const [adminUsers, setAdminUsers]       = useState<AdminUser[]>([]);
+  const [newUsername, setNewUsername]     = useState('');
+  const [newPassword, setNewPassword]     = useState('');
+  const [newRole, setNewRole]             = useState<Role>('associate');
+  const [userSaving, setUserSaving]       = useState(false);
+  const [userMsg, setUserMsg]             = useState('');
 
   // Email templates state
   const EMAIL_KEYS = [
@@ -399,10 +433,18 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch(`${API}/api/admin/users`);
+      setAdminUsers(await res.json());
+    } catch (e) { console.error(e); }
+  };
+
   useEffect(() => { fetchData(); }, []);
   useEffect(() => { if (tab === 'calendar') fetchCalendar(); }, [tab, fetchCalendar]);
   useEffect(() => { if (tab === 'content') fetchContent(); }, [tab]);
   useEffect(() => { if (tab === 'analytics') fetchAnalytics(); }, [tab]);
+  useEffect(() => { if (tab === 'users') fetchUsers(); }, [tab]);
 
   // ── Bookings actions ──────────────────────────────────────────────────────
 
@@ -575,7 +617,7 @@ export default function AdminDashboard() {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />;
+  if (!authed) return <LoginScreen onLogin={(r) => { setRole(r); setAuthed(true); setTab(ROLE_TABS[r][0]); }} />;
 
   return (
     <div className="min-h-screen bg-sky-light/30 font-body text-slate-800">
@@ -612,6 +654,14 @@ export default function AdminDashboard() {
             Refresh Reviews
           </button>
           <div className="h-6 w-px bg-slate-200" />
+          <span className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full capitalize ${
+            role === 'owner' ? 'bg-ocean/10 text-ocean' :
+            role === 'manager' ? 'bg-purple-100 text-purple-700' :
+            'bg-slate-100 text-slate-600'
+          }`}>
+            <ShieldCheck size={12} /> {role}
+          </span>
+          <div className="h-6 w-px bg-slate-200" />
           <Link to="/" className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
             <Home size={16} /> View Site
           </Link>
@@ -627,7 +677,10 @@ export default function AdminDashboard() {
             { key: 'calendar',  icon: <CalendarDays size={16}/>, label: 'Calendar' },
             { key: 'content',   icon: <Image size={16}/>, label: 'Content' },
             { key: 'analytics', icon: <BarChart2 size={16}/>, label: 'Analytics' },
-          ] as { key: Tab; icon: React.ReactNode; label: string }[]).map(({ key, icon, label }) => (
+            { key: 'users',     icon: <Users size={16}/>, label: 'Users' },
+          ] as { key: Tab; icon: React.ReactNode; label: string }[])
+            .filter(({ key }) => allowedTabs.includes(key))
+            .map(({ key, icon, label }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -1431,6 +1484,135 @@ export default function AdminDashboard() {
                   </table>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Users Tab ──────────────────────────────────────────────────── */}
+        {tab === 'users' && (
+          <div className="space-y-6">
+            <h2 className="text-lg font-display font-bold text-slate-900">User Management</h2>
+
+            {/* Add user form */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <Plus size={17} className="text-ocean" /> Add Staff Account
+              </h3>
+              <div className="flex flex-wrap gap-3 items-end">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Username</label>
+                  <input
+                    type="text"
+                    value={newUsername}
+                    onChange={e => setNewUsername(e.target.value)}
+                    className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40 w-40"
+                    placeholder="e.g. john"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Password</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40 w-40"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Role</label>
+                  <select
+                    value={newRole}
+                    onChange={e => setNewRole(e.target.value as Role)}
+                    className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40 bg-white"
+                  >
+                    <option value="associate">Associate</option>
+                    <option value="manager">Manager</option>
+                    <option value="owner">Owner</option>
+                  </select>
+                </div>
+                <button
+                  disabled={userSaving || !newUsername || !newPassword}
+                  onClick={async () => {
+                    setUserSaving(true);
+                    try {
+                      const res = await fetch(`${API}/api/admin/users`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: newUsername, password: newPassword, role: newRole }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) { setUserMsg(data.error || 'Failed.'); }
+                      else { setNewUsername(''); setNewPassword(''); setNewRole('associate'); setUserMsg('User created!'); fetchUsers(); }
+                    } catch { setUserMsg('Error creating user.'); }
+                    finally { setUserSaving(false); setTimeout(() => setUserMsg(''), 3000); }
+                  }}
+                  className="btn-primary py-2.5 px-5 text-sm disabled:opacity-40"
+                >
+                  {userSaving ? 'Creating…' : 'Add User'}
+                </button>
+                {userMsg && <span className="text-sm font-semibold text-green-600">{userMsg}</span>}
+              </div>
+            </div>
+
+            {/* Users list */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    {['Username', 'Role', 'Access', 'Created', 'Actions'].map(h => (
+                      <th key={h} className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {adminUsers.map(u => (
+                    <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="p-4 font-semibold text-slate-800">{u.username}</td>
+                      <td className="p-4">
+                        <select
+                          value={u.role}
+                          onChange={async e => {
+                            await fetch(`${API}/api/admin/users/${u.id}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ role: e.target.value }),
+                            });
+                            fetchUsers();
+                          }}
+                          className="border border-slate-200 rounded-lg px-2 py-1 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-ocean/40 capitalize"
+                        >
+                          <option value="associate">Associate</option>
+                          <option value="manager">Manager</option>
+                          <option value="owner">Owner</option>
+                        </select>
+                      </td>
+                      <td className="p-4 text-xs text-slate-500">
+                        {u.role === 'associate' && 'Bookings, Reservations'}
+                        {u.role === 'manager'   && 'Bookings, Reservations, Calendar'}
+                        {u.role === 'owner'     && 'Full access'}
+                      </td>
+                      <td className="p-4 text-xs text-slate-400">{u.created_at?.split('T')[0] || '—'}</td>
+                      <td className="p-4">
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm(`Delete user "${u.username}"?`)) return;
+                            await fetch(`${API}/api/admin/users/${u.id}`, { method: 'DELETE' });
+                            fetchUsers();
+                          }}
+                          className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete user"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {adminUsers.length === 0 && (
+                    <tr><td colSpan={5} className="p-12 text-center text-slate-400 text-sm italic">No users yet.</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
