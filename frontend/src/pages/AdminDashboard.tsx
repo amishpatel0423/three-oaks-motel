@@ -339,6 +339,8 @@ export default function AdminDashboard() {
   const [newRole, setNewRole]             = useState<Role>('associate');
   const [userSaving, setUserSaving]       = useState(false);
   const [userMsg, setUserMsg]             = useState('');
+  const [resetPwUserId, setResetPwUserId] = useState<number | null>(null);
+  const [resetPwValue, setResetPwValue]   = useState('');
 
   // Email templates state
   const EMAIL_KEYS = [
@@ -1605,17 +1607,56 @@ export default function AdminDashboard() {
                       </td>
                       <td className="p-4 text-xs text-slate-400">{u.created_at?.split('T')[0] || '—'}</td>
                       <td className="p-4">
-                        <button
-                          onClick={async () => {
-                            if (!window.confirm(`Delete user "${u.username}"?`)) return;
-                            await fetch(`${API}/api/admin/users/${u.id}`, { method: 'DELETE' });
-                            fetchUsers();
-                          }}
-                          className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete user"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {resetPwUserId === u.id ? (
+                            <>
+                              <input
+                                type="password"
+                                value={resetPwValue}
+                                onChange={e => setResetPwValue(e.target.value)}
+                                placeholder="New password"
+                                autoFocus
+                                className="border border-slate-200 rounded-lg px-2 py-1 text-xs w-32 focus:outline-none focus:ring-2 focus:ring-ocean/40"
+                              />
+                              <button
+                                onClick={async () => {
+                                  if (!resetPwValue) return;
+                                  await fetch(`${API}/api/admin/users/${u.id}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ password: resetPwValue }),
+                                  });
+                                  setResetPwUserId(null); setResetPwValue('');
+                                  setUserMsg('Password updated!');
+                                  setTimeout(() => setUserMsg(''), 3000);
+                                }}
+                                className="text-xs font-semibold text-green-600 hover:text-green-700"
+                              >Save</button>
+                              <button
+                                onClick={() => { setResetPwUserId(null); setResetPwValue(''); }}
+                                className="text-xs text-slate-400 hover:text-slate-600"
+                              >Cancel</button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => { setResetPwUserId(u.id); setResetPwValue(''); }}
+                              className="text-xs font-semibold text-slate-500 hover:text-ocean transition-colors"
+                            >
+                              Reset Password
+                            </button>
+                          )}
+                          <button
+                            onClick={async () => {
+                              if (!window.confirm(`Delete user "${u.username}"?`)) return;
+                              await fetch(`${API}/api/admin/users/${u.id}`, { method: 'DELETE' });
+                              fetchUsers();
+                            }}
+                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete user"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
