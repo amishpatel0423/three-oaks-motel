@@ -318,6 +318,26 @@ def send_email(to: str, subject: str, html: str):
         print(f"Email error ({to}): {e}")
 
 
+@app.get("/api/admin/test-email")
+def test_email():
+    if not EMAIL_USER or not EMAIL_PASSWORD:
+        return jsonify({"error": "EMAIL_USER or EMAIL_PASSWORD env vars not set on Render."}), 500
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Three Oaks Motel — Email Test"
+        msg["From"]    = f"Three Oaks Motel <{EMAIL_USER}>"
+        msg["To"]      = ADMIN_EMAIL
+        msg.attach(MIMEText("<p>Test email from Three Oaks Motel backend. Email is working!</p>", "html"))
+        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.login(EMAIL_USER, EMAIL_PASSWORD)
+            smtp.sendmail(EMAIL_USER, ADMIN_EMAIL, msg.as_string())
+        return jsonify({"status": "sent", "to": ADMIN_EMAIL, "from": EMAIL_USER})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 def fmt_date(iso: str) -> str:
     months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
     y, m, d = iso.split("-")
