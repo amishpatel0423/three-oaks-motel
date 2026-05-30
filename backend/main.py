@@ -345,9 +345,9 @@ def test_email():
         return jsonify({"status": "sent", "to": ADMIN_EMAIL, "resend_id": result.get("id")})
     except urllib.error.HTTPError as e:
         body = e.read().decode()
-        return jsonify({"error": body}), 500
+        return jsonify({"http_status": e.code, "error": body, "key_prefix": RESEND_API_KEY[:6] + "..."}), 500
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e), "key_prefix": RESEND_API_KEY[:6] + "..."}), 500
 
 
 def fmt_date(iso: str) -> str:
