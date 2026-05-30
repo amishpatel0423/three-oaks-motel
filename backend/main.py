@@ -4,22 +4,19 @@ import json
 import random
 import secrets
 import string
-import smtplib
 import threading
 import urllib.request
+import urllib.error
 from datetime import date, timedelta, datetime
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import psycopg2
 import psycopg2.extras
 import openpyxl
 
-DATABASE_URL   = os.environ.get("DATABASE_URL", "")
-EMAIL_USER     = os.environ.get("EMAIL_USER", "")
-EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "")
-ADMIN_EMAIL    = "amishpatel0423@gmail.com"
+DATABASE_URL    = os.environ.get("DATABASE_URL", "")
+RESEND_API_KEY  = os.environ.get("RESEND_API_KEY", "")
+ADMIN_EMAIL     = "amishpatel0423@gmail.com"
 
 # ── Google Reviews config ─────────────────────────────────────────────────────
 GOOGLE_API_KEY      = os.environ.get("GOOGLE_API_KEY", "AIzaSyBy7FZLlpJ0HrcIipvP9vYOlmAVA0HFxDk")
@@ -299,41 +296,56 @@ def available_rooms(category, check_in, check_out):
 # ── Email helpers ─────────────────────────────────────────────────────────────
 
 def send_email(to: str, subject: str, html: str):
-    if not EMAIL_USER or not EMAIL_PASSWORD:
-        print("EMAIL_USER / EMAIL_PASSWORD not set — skipping email.")
+    if not RESEND_API_KEY:
+        print("RESEND_API_KEY not set — skipping email.")
         return
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"]    = f"Three Oaks Motel <{EMAIL_USER}>"
-        msg["To"]      = to
-        msg.attach(MIMEText(html, "html"))
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.login(EMAIL_USER, EMAIL_PASSWORD)
-            smtp.sendmail(EMAIL_USER, to, msg.as_string())
-        print(f"Email sent to {to}: {subject}")
+        payload = json.dumps({
+            "from": "Three Oaks Motel <onboarding@resend.dev>",
+            "to": [to],
+            "subject": subject,
+            "html": html,
+        }).encode()
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+        )
+        with urllib.request.urlopen(req) as resp:
+            result = json.loads(resp.read())
+        print(f"Email sent to {to} via Resend: {result}")
     except Exception as e:
         print(f"Email error ({to}): {e}")
 
 
 @app.get("/api/admin/test-email")
 def test_email():
-    if not EMAIL_USER or not EMAIL_PASSWORD:
-        return jsonify({"error": "EMAIL_USER or EMAIL_PASSWORD env vars not set on Render."}), 500
+    if not RESEND_API_KEY:
+        return jsonify({"error": "RESEND_API_KEY env var not set on Render."}), 500
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = "Three Oaks Motel — Email Test"
-        msg["From"]    = f"Three Oaks Motel <{EMAIL_USER}>"
-        msg["To"]      = ADMIN_EMAIL
-        msg.attach(MIMEText("<p>Test email from Three Oaks Motel backend. Email is working!</p>", "html"))
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.login(EMAIL_USER, EMAIL_PASSWORD)
-            smtp.sendmail(EMAIL_USER, ADMIN_EMAIL, msg.as_string())
-        return jsonify({"status": "sent", "to": ADMIN_EMAIL, "from": EMAIL_USER})
+        payload = json.dumps({
+            "from": "Three Oaks Motel <onboarding@resend.dev>",
+            "to": [ADMIN_EMAIL],
+            "subject": "Three Oaks Motel — Email Test",
+            "html": "<p>Test email from Three Oaks Motel backend. Email is working!</p>",
+        }).encode()
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+        )
+        with urllib.request.urlopen(req) as resp:
+            result = json.loads(resp.read())
+        return jsonify({"status": "sent", "to": ADMIN_EMAIL, "resend_id": result.get("id")})
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()
+        return jsonify({"error": body}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
