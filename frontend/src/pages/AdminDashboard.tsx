@@ -665,6 +665,17 @@ export default function AdminDashboard() {
           <Link to="/" className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
             <Home size={16} /> View Site
           </Link>
+          <div className="h-6 w-px bg-slate-200" />
+          <button
+            onClick={() => {
+              sessionStorage.removeItem('admin_auth');
+              sessionStorage.removeItem('admin_role');
+              setAuthed(false);
+            }}
+            className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-red-600 transition-colors"
+          >
+            Sign Out
+          </button>
         </div>
       </header>
 
