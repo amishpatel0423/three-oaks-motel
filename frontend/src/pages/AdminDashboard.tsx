@@ -4,6 +4,17 @@ import { Link } from 'react-router-dom';
 
 const API = import.meta.env.VITE_API_URL || 'https://three-oaks-motel-api.onrender.com';
 
+const EMAIL_TEMPLATE_DEFAULTS: Record<string, string> = {
+  email_booking_subject:      'Booking Received — Three Oaks Motel | Ref: {{reference}}',
+  email_booking_message:      "Thank you for choosing Three Oaks Motel. Your booking request has been received and is pending confirmation. We'll be in touch shortly.",
+  email_approval_subject:     'Booking Confirmed — Three Oaks Motel | Ref: {{reference}}',
+  email_approval_message:     'Great news — your reservation has been confirmed. We look forward to welcoming you!',
+  email_rejection_subject:    'Booking Update — Three Oaks Motel | Ref: {{reference}}',
+  email_rejection_message:    "Thank you for your interest in staying with us. Unfortunately, we were unable to accommodate your booking request at this time.",
+  email_cancellation_subject: 'Reservation Cancelled — Three Oaks Motel | Ref: {{reference}}',
+  email_cancellation_message: "Your reservation has been successfully cancelled. We're sorry to see you go and hope to welcome you in the future.",
+};
+
 interface Booking {
   id: number;
   reference_number: string | null;
@@ -295,6 +306,17 @@ export default function AdminDashboard() {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [exporting, setExporting]           = useState(false);
 
+  // Email templates state
+  const EMAIL_KEYS = [
+    { key: 'booking',      label: 'Booking Received',    vars: '{{name}}, {{reference}}, {{room}}, {{check_in}}, {{check_out}}, {{total}}' },
+    { key: 'approval',     label: 'Booking Confirmed',   vars: '{{name}}, {{reference}}, {{room}}, {{room_number}}, {{check_in}}, {{check_out}}, {{total}}' },
+    { key: 'rejection',    label: 'Booking Declined',    vars: '{{name}}, {{reference}}, {{room}}, {{check_in}}, {{check_out}}' },
+    { key: 'cancellation', label: 'Reservation Cancelled', vars: '{{name}}, {{reference}}, {{room}}, {{check_in}}, {{check_out}}' },
+  ];
+  const [emailTemplates, setEmailTemplates] = useState<Record<string, { subject: string; message: string }>>({});
+  const [emailSaving, setEmailSaving]       = useState(false);
+  const [emailMsg, setEmailMsg]             = useState('');
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -332,9 +354,37 @@ export default function AdminDashboard() {
       setAmenities(content.amenities ? JSON.parse(content.amenities) : []);
       setGalleryPhotos(await galleryRes.json());
       setRoomPhotos(await roomRes.json());
+      // Load email templates
+      const tmpl: Record<string, { subject: string; message: string }> = {};
+      for (const { key } of EMAIL_KEYS) {
+        tmpl[key] = {
+          subject: content[`email_${key}_subject`] || '',
+          message: content[`email_${key}_message`] || '',
+        };
+      }
+      setEmailTemplates(tmpl);
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const handleSaveEmailTemplates = async () => {
+    setEmailSaving(true);
+    const payload: Record<string, string> = {};
+    for (const { key } of EMAIL_KEYS) {
+      payload[`email_${key}_subject`] = emailTemplates[key]?.subject || '';
+      payload[`email_${key}_message`] = emailTemplates[key]?.message || '';
+    }
+    try {
+      await fetch(`${API}/api/admin/content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      setEmailMsg('Saved!');
+      setTimeout(() => setEmailMsg(''), 3000);
+    } catch (e) { console.error(e); }
+    finally { setEmailSaving(false); }
   };
 
   const fetchAnalytics = async () => {
@@ -1239,6 +1289,58 @@ export default function AdminDashboard() {
                 />
               </div>
             ))}
+
+            {/* Email templates */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                  <FileText size={17} className="text-ocean" /> Email Templates
+                </h3>
+                <div className="flex items-center gap-3">
+                  {emailMsg && <span className="text-sm text-green-600 font-semibold">{emailMsg}</span>}
+                  <button
+                    onClick={handleSaveEmailTemplates}
+                    disabled={emailSaving}
+                    className="flex items-center gap-2 btn-primary py-2 px-4 text-sm disabled:opacity-50"
+                  >
+                    <Save size={14} />
+                    {emailSaving ? 'Saving…' : 'Save Templates'}
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-slate-400">Customize the subject and message for each email. Leave blank to use the default text.</p>
+
+              <div className="space-y-6">
+                {EMAIL_KEYS.map(({ key, label, vars }) => (
+                  <div key={key} className="border border-slate-200 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-slate-700">{label}</span>
+                      <span className="text-xs text-slate-400 font-mono bg-slate-50 px-2 py-0.5 rounded">{vars}</span>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Subject</label>
+                      <input
+                        type="text"
+                        value={emailTemplates[key]?.subject || ''}
+                        onChange={e => setEmailTemplates(prev => ({ ...prev, [key]: { ...prev[key], subject: e.target.value } }))}
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40"
+                        placeholder={`Default: ${EMAIL_TEMPLATE_DEFAULTS[`email_${key}_subject`] || ''}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Message Body</label>
+                      <textarea
+                        value={emailTemplates[key]?.message || ''}
+                        onChange={e => setEmailTemplates(prev => ({ ...prev, [key]: { ...prev[key], message: e.target.value } }))}
+                        rows={3}
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40 resize-y"
+                        placeholder={`Default: ${EMAIL_TEMPLATE_DEFAULTS[`email_${key}_message`] || ''}`}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 

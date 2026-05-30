@@ -15,7 +15,8 @@ import psycopg2.extras
 import openpyxl
 
 DATABASE_URL    = os.environ.get("DATABASE_URL", "")
-RESEND_API_KEY  = os.environ.get("RESEND_API_KEY", "")
+BREVO_API_KEY   = os.environ.get("BREVO_API_KEY", "")
+SENDER_EMAIL    = os.environ.get("SENDER_EMAIL", "amishpatel0423@gmail.com")
 ADMIN_EMAIL     = "amishpatel0423@gmail.com"
 
 # ── Google Reviews config ─────────────────────────────────────────────────────
@@ -296,58 +297,58 @@ def available_rooms(category, check_in, check_out):
 # ── Email helpers ─────────────────────────────────────────────────────────────
 
 def send_email(to: str, subject: str, html: str):
-    if not RESEND_API_KEY:
-        print("RESEND_API_KEY not set — skipping email.")
+    if not BREVO_API_KEY:
+        print("BREVO_API_KEY not set — skipping email.")
         return
     try:
         payload = json.dumps({
-            "from": "Three Oaks Motel <onboarding@resend.dev>",
-            "to": [to],
-            "subject": subject,
-            "html": html,
+            "sender":      {"name": "Three Oaks Motel", "email": SENDER_EMAIL},
+            "to":          [{"email": to}],
+            "subject":     subject,
+            "htmlContent": html,
         }).encode()
         req = urllib.request.Request(
-            "https://api.resend.com/emails",
+            "https://api.brevo.com/v3/smtp/email",
             data=payload,
             headers={
-                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "api-key":      BREVO_API_KEY,
                 "Content-Type": "application/json",
             },
         )
         with urllib.request.urlopen(req) as resp:
             result = json.loads(resp.read())
-        print(f"Email sent to {to} via Resend: {result}")
+        print(f"Email sent to {to} via Brevo: {result}")
     except Exception as e:
         print(f"Email error ({to}): {e}")
 
 
 @app.get("/api/admin/test-email")
 def test_email():
-    if not RESEND_API_KEY:
-        return jsonify({"error": "RESEND_API_KEY env var not set on Render."}), 500
+    if not BREVO_API_KEY:
+        return jsonify({"error": "BREVO_API_KEY env var not set on Render."}), 500
     try:
         payload = json.dumps({
-            "from": "Three Oaks Motel <onboarding@resend.dev>",
-            "to": [ADMIN_EMAIL],
-            "subject": "Three Oaks Motel — Email Test",
-            "html": "<p>Test email from Three Oaks Motel backend. Email is working!</p>",
+            "sender":      {"name": "Three Oaks Motel", "email": SENDER_EMAIL},
+            "to":          [{"email": ADMIN_EMAIL}],
+            "subject":     "Three Oaks Motel — Email Test",
+            "htmlContent": "<p>Test email from Three Oaks Motel backend via Brevo. Email is working!</p>",
         }).encode()
         req = urllib.request.Request(
-            "https://api.resend.com/emails",
+            "https://api.brevo.com/v3/smtp/email",
             data=payload,
             headers={
-                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "api-key":      BREVO_API_KEY,
                 "Content-Type": "application/json",
             },
         )
         with urllib.request.urlopen(req) as resp:
             result = json.loads(resp.read())
-        return jsonify({"status": "sent", "to": ADMIN_EMAIL, "resend_id": result.get("id")})
+        return jsonify({"status": "sent", "to": ADMIN_EMAIL, "messageId": result.get("messageId")})
     except urllib.error.HTTPError as e:
         body = e.read().decode()
-        return jsonify({"http_status": e.code, "error": body, "key_prefix": RESEND_API_KEY[:6] + "..."}), 500
+        return jsonify({"http_status": e.code, "error": body}), 500
     except Exception as e:
-        return jsonify({"error": str(e), "key_prefix": RESEND_API_KEY[:6] + "..."}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 def fmt_date(iso: str) -> str:
@@ -357,6 +358,31 @@ def fmt_date(iso: str) -> str:
 
 
 SITE_URL = "https://three-oaks-motel.vercel.app"
+
+EMAIL_TEMPLATE_DEFAULTS = {
+    "email_booking_subject":      "Booking Received — Three Oaks Motel | Ref: {{reference}}",
+    "email_booking_message":      "Thank you for choosing Three Oaks Motel. Your booking request has been received and is pending confirmation. We'll be in touch shortly.",
+    "email_approval_subject":     "Booking Confirmed — Three Oaks Motel | Ref: {{reference}}",
+    "email_approval_message":     "Great news — your reservation has been confirmed. We look forward to welcoming you!",
+    "email_rejection_subject":    "Booking Update — Three Oaks Motel | Ref: {{reference}}",
+    "email_rejection_message":    "Thank you for your interest in staying with us. Unfortunately, we were unable to accommodate your booking request at this time. We apologize for any inconvenience — please don't hesitate to contact us directly.",
+    "email_cancellation_subject": "Reservation Cancelled — Three Oaks Motel | Ref: {{reference}}",
+    "email_cancellation_message": "Your reservation has been successfully cancelled. We're sorry to see you go and hope to welcome you in the future.",
+}
+
+def _get_email_template(key: str, vars: dict) -> str:
+    try:
+        con = get_con()
+        cur = con.cursor()
+        cur.execute("SELECT value FROM site_content WHERE key=%s", (key,))
+        row = cur.fetchone()
+        cur.close(); con.close()
+        text = row["value"] if row and row["value"] else EMAIL_TEMPLATE_DEFAULTS.get(key, "")
+    except Exception:
+        text = EMAIL_TEMPLATE_DEFAULTS.get(key, "")
+    for k, v in vars.items():
+        text = text.replace(f"{{{{{k}}}}}", str(v) if v is not None else "")
+    return text
 
 
 def _cancel_link_html(cancel_token: str) -> str:
@@ -381,6 +407,9 @@ def send_booking_emails(d: dict):
     cat   = d["category"]
     sr    = d.get("special_requests") or "None"
     cancel_html = _cancel_link_html(d.get("cancel_token", ""))
+    vars  = {"reference": ref, "name": name, "room": cat, "check_in": ci, "check_out": co, "total": total}
+    subj  = _get_email_template("email_booking_subject", vars)
+    msg   = _get_email_template("email_booking_message", vars)
 
     # ── Guest confirmation ────────────────────────────────────────────────────
     guest_html = f"""
@@ -401,9 +430,7 @@ def send_booking_emails(d: dict):
         <tr><td style="padding:40px 40px 32px;">
           <p style="margin:0 0 6px;color:#64748b;font-size:13px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">Booking Received</p>
           <h2 style="margin:0 0 24px;color:#0f172a;font-size:28px;font-weight:800;">Hi {name},</h2>
-          <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
-            Thank you for choosing Three Oaks Motel. Your booking request has been received and is pending confirmation. We'll be in touch shortly.
-          </p>
+          <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">{msg}</p>
 
           <!-- Reference -->
           <div style="background:#f0f8ff;border:2px solid #006994;border-radius:12px;padding:20px 24px;margin-bottom:28px;text-align:center;">
@@ -538,11 +565,7 @@ def send_booking_emails(d: dict):
 </body>
 </html>"""
 
-    send_email(
-        d["email"],
-        f"Booking Received — Three Oaks Motel | Ref: {ref}",
-        guest_html,
-    )
+    send_email(d["email"], subj, guest_html)
     send_email(
         ADMIN_EMAIL,
         f"New Booking Request — {ref}",
@@ -559,6 +582,9 @@ def send_approval_email(b: dict):
     room_num     = b.get("room_number", "")
     cancel_html  = _cancel_link_html(b.get("cancel_token", ""))
     room_line    = f"Room <strong>{room_num}</strong> — {b['category']}" if room_num else b["category"]
+    vars         = {"reference": ref, "name": name, "room": b["category"], "room_number": room_num, "check_in": ci, "check_out": co, "total": total}
+    subj         = _get_email_template("email_approval_subject", vars)
+    msg          = _get_email_template("email_approval_message", vars)
 
     html = f"""
 <!DOCTYPE html><html>
@@ -572,7 +598,7 @@ def send_approval_email(b: dict):
         </td></tr>
         <tr><td style="padding:40px 40px 32px;">
           <h2 style="margin:0 0 16px;color:#0f172a;font-size:24px;">Hi {name},</h2>
-          <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">Great news — your reservation has been confirmed. We look forward to welcoming you!</p>
+          <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">{msg}</p>
           <div style="background:#f0f8ff;border:2px solid #16a34a;border-radius:12px;padding:20px 24px;margin-bottom:28px;text-align:center;">
             <p style="margin:0 0 4px;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;">Reference Number</p>
             <p style="margin:0;color:#16a34a;font-size:28px;font-weight:900;font-family:monospace;letter-spacing:2px;">{ref}</p>
@@ -607,12 +633,15 @@ def send_approval_email(b: dict):
     </td></tr>
   </table>
 </body></html>"""
-    send_email(b["email"], f"Booking Confirmed — Three Oaks Motel | Ref: {ref}", html)
+    send_email(b["email"], subj, html)
 
 
 def send_rejection_email(b: dict):
     ref  = b["reference_number"]
     name = b["guest_name"]
+    vars = {"reference": ref, "name": name, "room": b["category"], "check_in": fmt_date(b["check_in_date"]), "check_out": fmt_date(b["check_out_date"])}
+    subj = _get_email_template("email_rejection_subject", vars)
+    msg  = _get_email_template("email_rejection_message", vars)
     html = f"""
 <!DOCTYPE html><html>
 <body style="margin:0;padding:0;background:#f0f8ff;font-family:Inter,Arial,sans-serif;">
@@ -625,12 +654,7 @@ def send_rejection_email(b: dict):
         </td></tr>
         <tr><td style="padding:40px 40px 32px;">
           <h2 style="margin:0 0 16px;color:#0f172a;font-size:22px;">Hi {name},</h2>
-          <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.6;">
-            Thank you for your interest in staying with us. Unfortunately, we were unable to accommodate your booking request at this time.
-          </p>
-          <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
-            We apologize for any inconvenience. Please don't hesitate to contact us directly — we'd love to help find an alternative arrangement.
-          </p>
+          <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">{msg}</p>
           <div style="text-align:center;margin-bottom:24px;">
             <a href="tel:3212676272" style="display:inline-block;background:#006994;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;">
               Call Us: (321) 267-6272
@@ -647,7 +671,7 @@ def send_rejection_email(b: dict):
     </td></tr>
   </table>
 </body></html>"""
-    send_email(b["email"], f"Booking Update — Three Oaks Motel | Ref: {ref}", html)
+    send_email(b["email"], subj, html)
 
 
 def send_cancellation_emails(b: dict):
@@ -656,6 +680,9 @@ def send_cancellation_emails(b: dict):
     ci   = fmt_date(b["check_in_date"])
     co   = fmt_date(b["check_out_date"])
     cat  = b["category"]
+    vars = {"reference": ref, "name": name, "room": cat, "check_in": ci, "check_out": co}
+    subj = _get_email_template("email_cancellation_subject", vars)
+    msg  = _get_email_template("email_cancellation_message", vars)
 
     guest_html = f"""
 <!DOCTYPE html><html>
@@ -669,9 +696,7 @@ def send_cancellation_emails(b: dict):
         </td></tr>
         <tr><td style="padding:40px 40px 32px;">
           <h2 style="margin:0 0 16px;color:#0f172a;font-size:22px;">Hi {name},</h2>
-          <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.6;">
-            Your reservation has been successfully cancelled. We're sorry to see you go!
-          </p>
+          <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.6;">{msg}</p>
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:12px;margin-bottom:28px;">
             <tr><td style="padding:14px 20px;border-bottom:1px solid #e2e8f0;">
               <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Reference</span><br>
@@ -724,7 +749,7 @@ def send_cancellation_emails(b: dict):
   </table>
 </body></html>"""
 
-    send_email(b["email"], f"Reservation Cancelled — Three Oaks Motel | Ref: {ref}", guest_html)
+    send_email(b["email"], subj, guest_html)
     send_email(ADMIN_EMAIL, f"Guest Cancelled — {ref}", admin_html)
 
 
