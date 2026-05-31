@@ -332,11 +332,12 @@ export default function AdminDashboard() {
   const [exporting, setExporting]           = useState(false);
 
   // Users tab state
-  interface AdminUser { id: number; username: string; role: string; created_at: string | null; }
+  interface AdminUser { id: number; username: string; role: string; email: string | null; created_at: string | null; }
   const [adminUsers, setAdminUsers]       = useState<AdminUser[]>([]);
   const [newUsername, setNewUsername]     = useState('');
   const [newPassword, setNewPassword]     = useState('');
   const [newRole, setNewRole]             = useState<Role>('associate');
+  const [newEmail, setNewEmail]           = useState('');
   const [userSaving, setUserSaving]       = useState(false);
   const [userMsg, setUserMsg]             = useState('');
   const [resetPwUserId, setResetPwUserId] = useState<number | null>(null);
@@ -1714,6 +1715,16 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Email (for notifications)</label>
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={e => setNewEmail(e.target.value)}
+                    className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40 w-52"
+                    placeholder="e.g. john@example.com"
+                  />
+                </div>
+                <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Role</label>
                   <select
                     value={newRole}
@@ -1733,11 +1744,11 @@ export default function AdminDashboard() {
                       const res = await fetch(`${API}/api/admin/users`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: newUsername, password: newPassword, role: newRole }),
+                        body: JSON.stringify({ username: newUsername, password: newPassword, role: newRole, email: newEmail }),
                       });
                       const data = await res.json();
                       if (!res.ok) { setUserMsg(data.error || 'Failed.'); }
-                      else { setNewUsername(''); setNewPassword(''); setNewRole('associate'); setUserMsg('User created!'); fetchUsers(); }
+                      else { setNewUsername(''); setNewPassword(''); setNewRole('associate'); setNewEmail(''); setUserMsg('User created!'); fetchUsers(); }
                     } catch { setUserMsg('Error creating user.'); }
                     finally { setUserSaving(false); setTimeout(() => setUserMsg(''), 3000); }
                   }}
@@ -1754,7 +1765,7 @@ export default function AdminDashboard() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
-                    {['Username', 'Role', 'Access', 'Created', 'Actions'].map(h => (
+                    {['Username', 'Email', 'Role', 'Access', 'Created', 'Actions'].map(h => (
                       <th key={h} className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
@@ -1763,6 +1774,22 @@ export default function AdminDashboard() {
                   {adminUsers.map(u => (
                     <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="p-4 font-semibold text-slate-800">{u.username}</td>
+                      <td className="p-4">
+                        <input
+                          type="email"
+                          defaultValue={u.email || ''}
+                          onBlur={async e => {
+                            await fetch(`${API}/api/admin/users/${u.id}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ email: e.target.value }),
+                            });
+                            fetchUsers();
+                          }}
+                          className="border border-slate-200 rounded-lg px-2 py-1 text-xs w-48 focus:outline-none focus:ring-2 focus:ring-ocean/40"
+                          placeholder="email@example.com"
+                        />
+                      </td>
                       <td className="p-4">
                         <select
                           value={u.role}
@@ -1842,7 +1869,7 @@ export default function AdminDashboard() {
                     </tr>
                   ))}
                   {adminUsers.length === 0 && (
-                    <tr><td colSpan={5} className="p-12 text-center text-slate-400 text-sm italic">No users yet.</td></tr>
+                    <tr><td colSpan={6} className="p-12 text-center text-slate-400 text-sm italic">No users yet.</td></tr>
                   )}
                 </tbody>
               </table>

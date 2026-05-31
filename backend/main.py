@@ -243,9 +243,11 @@ def setup_db():
             username      TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             role          TEXT NOT NULL DEFAULT 'associate',
+            email         TEXT,
             created_at    TEXT
         )
     """)
+    cur.execute("ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS email TEXT")
 
     cur.execute("SELECT COUNT(*) FROM admin_users")
     if cur.fetchone()["count"] == 0:
@@ -389,6 +391,23 @@ def fmt_date(iso: str) -> str:
 
 
 SITE_URL = "https://three-oaks-motel.vercel.app"
+
+
+def _notify_all_staff(subject: str, html: str):
+    """Send to every admin_user with an email; fall back to ADMIN_EMAIL if none."""
+    try:
+        con = get_con()
+        cur = con.cursor()
+        cur.execute("SELECT email FROM admin_users WHERE email IS NOT NULL AND email != ''")
+        rows = cur.fetchall()
+        cur.close(); con.close()
+        emails = [r["email"] for r in rows]
+    except Exception:
+        emails = []
+    if not emails:
+        emails = [ADMIN_EMAIL]
+    for addr in emails:
+        send_email(addr, subject, html)
 
 EMAIL_TEMPLATE_DEFAULTS = {
     "email_booking_subject":      "Booking Received — Three Oaks Motel | Ref: {{reference}}",
@@ -597,11 +616,7 @@ def send_booking_emails(d: dict):
 </html>"""
 
     send_email(d["email"], subj, guest_html)
-    send_email(
-        ADMIN_EMAIL,
-        f"New Booking Request — {ref}",
-        admin_html,
-    )
+    _notify_all_staff(f"New Booking Request — {ref}", admin_html)
 
 
 def send_approval_email(b: dict):
@@ -781,7 +796,7 @@ def send_cancellation_emails(b: dict):
 </body></html>"""
 
     send_email(b["email"], subj, guest_html)
-    send_email(ADMIN_EMAIL, f"Guest Cancelled — {ref}", admin_html)
+    _notify_all_staff(f"Guest Cancelled — {ref}", admin_html)
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -1345,7 +1360,7 @@ def send_change_request_email(b: dict, req: dict):
     </td></tr>
   </table>
 </body></html>"""
-    send_email(ADMIN_EMAIL, f"Guest Change Request — {ref}", html)
+    _notify_all_staff(f"Guest Change Request — {ref}", html)
 
 
 def send_change_approved_email(b: dict):
@@ -1824,7 +1839,7 @@ def admin_login():
 def list_admin_users():
     con = get_con()
     cur = con.cursor()
-    cur.execute("SELECT id, username, role, created_at FROM admin_users ORDER BY id")
+    cur.execute("SELECT id, username, role, email, created_at FROM admin_users ORDER BY id")
     rows = cur.fetchall()
     cur.close(); con.close()
     return jsonify([dict(r) for r in rows])
@@ -1836,6 +1851,7 @@ def create_admin_user():
     username = data.get("username", "").strip()
     password = data.get("password", "")
     role     = data.get("role", "associate")
+    email    = data.get("email", "").strip() or None
     if not username or not password:
         return jsonify({"error": "Username and password required."}), 400
     if role not in ("associate", "manager", "owner"):
@@ -1844,8 +1860,8 @@ def create_admin_user():
     cur = con.cursor()
     try:
         cur.execute(
-            "INSERT INTO admin_users (username, password_hash, role, created_at) VALUES (%s,%s,%s,%s) RETURNING id, username, role, created_at",
-            (username, generate_password_hash(password), role, datetime.now().isoformat(timespec="seconds"))
+            "INSERT INTO admin_users (username, password_hash, role, email, created_at) VALUES (%s,%s,%s,%s,%s) RETURNING id, username, role, email, created_at",
+            (username, generate_password_hash(password), role, email, datetime.now().isoformat(timespec="seconds"))
         )
         row = cur.fetchone()
         con.commit()
@@ -1879,6 +1895,9 @@ def update_admin_user(uid):
     if "password" in data and data["password"]:
         cur.execute("UPDATE admin_users SET password_hash=%s WHERE id=%s",
                     (generate_password_hash(data["password"]), uid))
+    if "email" in data:
+        cur.execute("UPDATE admin_users SET email=%s WHERE id=%s",
+                    (data["email"].strip() or None, uid))
     con.commit()
     cur.close(); con.close()
     return jsonify({"message": "Updated."})
