@@ -3,6 +3,7 @@ import HomePage from "./pages/HomePage";
 import AdminDashboard from "./pages/AdminDashboard";
 import BookingPage from "./pages/BookingPage";
 import CancelPage from "./pages/CancelPage";
+import ManagePage from "./pages/ManagePage";
 import RocketLaunch from "./components/RocketLaunch";
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/cancel" element={<CancelPage />} />
+        <Route path="/manage" element={<ManagePage />} />
       </Routes>
     </Router>
   );

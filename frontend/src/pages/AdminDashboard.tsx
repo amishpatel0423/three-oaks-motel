@@ -342,6 +342,19 @@ export default function AdminDashboard() {
   const [resetPwUserId, setResetPwUserId] = useState<number | null>(null);
   const [resetPwValue, setResetPwValue]   = useState('');
 
+  // Booking edit state
+  interface EditForm { category: string; check_in_date: string; check_out_date: string; total_price: string; }
+  const [editingId, setEditingId]         = useState<number | null>(null);
+  const [editForm, setEditForm]           = useState<EditForm>({ category: '', check_in_date: '', check_out_date: '', total_price: '' });
+  const [editAvail, setEditAvail]         = useState<{ count: number; rooms: string[] } | null>(null);
+  const [editSaving, setEditSaving]       = useState(false);
+  const [editMsg, setEditMsg]             = useState('');
+
+  // Change requests state
+  interface ChangeRequest { id: number; booking_id: number; reference_number: string; guest_name: string; email: string; category: string; check_in_date: string; check_out_date: string; requested_category: string; requested_check_in: string; requested_check_out: string; created_at: string; }
+  const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>([]);
+  const [crMsg, setCrMsg]                   = useState('');
+
   // Email templates state
   const EMAIL_KEYS = [
     { key: 'booking',      label: 'Booking Received',    vars: '{{name}}, {{reference}}, {{room}}, {{check_in}}, {{check_out}}, {{total}}' },
@@ -356,8 +369,12 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/bookings`);
-      setAllBookings(await res.json());
+      const [bookRes, crRes] = await Promise.all([
+        fetch(`${API}/api/bookings`),
+        fetch(`${API}/api/admin/booking-changes`),
+      ]);
+      setAllBookings(await bookRes.json());
+      setChangeRequests(await crRes.json());
     } catch (e) {
       console.error(e);
     } finally {
@@ -881,6 +898,50 @@ export default function AdminDashboard() {
                 <span className="text-sm text-slate-400">{filtered.length} of {allBookings.length} reservation{allBookings.length !== 1 ? 's' : ''}</span>
               </div>
 
+              {/* Pending change requests */}
+              {changeRequests.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl overflow-hidden">
+                  <div className="px-5 py-3 border-b border-amber-200 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block" />
+                    <h3 className="text-sm font-bold text-amber-800">Pending Change Requests ({changeRequests.length})</h3>
+                    {crMsg && <span className="ml-auto text-xs font-semibold text-green-600">{crMsg}</span>}
+                  </div>
+                  <div className="divide-y divide-amber-100">
+                    {changeRequests.map(cr => (
+                      <div key={cr.id} className="px-5 py-4 flex flex-wrap items-start gap-4">
+                        <div className="flex-1 min-w-[200px]">
+                          <p className="text-sm font-bold text-slate-800">{cr.guest_name} <span className="font-mono text-xs text-ocean">({cr.reference_number})</span></p>
+                          <div className="mt-1 text-xs text-slate-500 space-y-0.5">
+                            <p>Current: <span className="font-semibold text-slate-700">{cr.category}</span> · {cr.check_in_date} → {cr.check_out_date}</p>
+                            <p>Requested: <span className="font-semibold text-amber-700">{cr.requested_category}</span> · {cr.requested_check_in} → {cr.requested_check_out}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={async () => {
+                              const res = await fetch(`${API}/api/admin/booking-changes/${cr.id}/approve`, { method: 'POST' });
+                              if (res.ok) { setCrMsg('Approved — guest notified.'); setTimeout(() => setCrMsg(''), 3000); fetchData(); }
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                          >
+                            <Check size={13} /> Approve
+                          </button>
+                          <button
+                            onClick={async () => {
+                              const res = await fetch(`${API}/api/admin/booking-changes/${cr.id}/deny`, { method: 'POST' });
+                              if (res.ok) { setCrMsg('Denied — guest notified.'); setTimeout(() => setCrMsg(''), 3000); fetchData(); }
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-lg transition-colors border border-red-100"
+                          >
+                            <X size={13} /> Deny
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="relative">
                 <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 <input
@@ -982,7 +1043,7 @@ export default function AdminDashboard() {
                           {expandedRow === b.id && (
                             <tr key={`${b.id}-detail`} className="bg-slate-50/80">
                               <td colSpan={12} className="px-6 py-4">
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
                                   <div>
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Nights</p>
                                     <p className="text-slate-700">{nightCount(b.check_in_date, b.check_out_date)}</p>
@@ -999,15 +1060,135 @@ export default function AdminDashboard() {
                                     <p className="text-slate-700 italic">{b.special_requests || 'None'}</p>
                                   </div>
                                 </div>
-                                {b.status === 'Pending' && (
-                                  <div className="flex gap-2 mt-4">
-                                    <button onClick={e => { e.stopPropagation(); handleApprove(b.id); }}
-                                      className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors">
-                                      <Check size={15} /> Approve
-                                    </button>
-                                    <button onClick={e => { e.stopPropagation(); handleReject(b.id); }}
-                                      className="flex items-center gap-1.5 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-semibold rounded-lg transition-colors border border-red-100">
-                                      <X size={15} /> Reject
+
+                                {/* Action buttons */}
+                                <div className="flex flex-wrap gap-2">
+                                  {b.status === 'Pending' && (
+                                    <>
+                                      <button onClick={e => { e.stopPropagation(); handleApprove(b.id); }}
+                                        className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                                        <Check size={15} /> Approve
+                                      </button>
+                                      <button onClick={e => { e.stopPropagation(); handleReject(b.id); }}
+                                        className="flex items-center gap-1.5 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-semibold rounded-lg transition-colors border border-red-100">
+                                        <X size={15} /> Reject
+                                      </button>
+                                    </>
+                                  )}
+                                  <button
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      if (editingId === b.id) { setEditingId(null); return; }
+                                      setEditingId(b.id);
+                                      setEditForm({ category: b.category, check_in_date: b.check_in_date, check_out_date: b.check_out_date, total_price: b.total_price != null ? String(b.total_price) : '' });
+                                      setEditAvail(null); setEditMsg('');
+                                    }}
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition-colors"
+                                  >
+                                    <Save size={15} /> {editingId === b.id ? 'Close Edit' : 'Edit Reservation'}
+                                  </button>
+                                </div>
+
+                                {/* Inline edit form */}
+                                {editingId === b.id && (
+                                  <div className="mt-4 p-4 bg-white border border-slate-200 rounded-xl space-y-4" onClick={e => e.stopPropagation()}>
+                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Edit Reservation</p>
+                                    <div className="flex flex-wrap gap-3 items-end">
+                                      <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Room Type</label>
+                                        <select
+                                          value={editForm.category}
+                                          onChange={async e => {
+                                            const cat = e.target.value;
+                                            setEditForm(f => ({ ...f, category: cat }));
+                                            setEditAvail(null);
+                                            if (editForm.check_in_date && editForm.check_out_date) {
+                                              const res = await fetch(`${API}/api/bookings/${b.id}/available-rooms-for-edit?category=${encodeURIComponent(cat)}&check_in=${editForm.check_in_date}&check_out=${editForm.check_out_date}`);
+                                              if (res.ok) setEditAvail(await res.json());
+                                            }
+                                          }}
+                                          className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40 bg-white"
+                                        >
+                                          {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Check-in</label>
+                                        <input type="date" value={editForm.check_in_date}
+                                          onChange={async e => {
+                                            const ci = e.target.value;
+                                            setEditForm(f => ({ ...f, check_in_date: ci }));
+                                            setEditAvail(null);
+                                            if (ci && editForm.check_out_date && editForm.category) {
+                                              const res = await fetch(`${API}/api/bookings/${b.id}/available-rooms-for-edit?category=${encodeURIComponent(editForm.category)}&check_in=${ci}&check_out=${editForm.check_out_date}`);
+                                              if (res.ok) setEditAvail(await res.json());
+                                            }
+                                          }}
+                                          className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Check-out</label>
+                                        <input type="date" value={editForm.check_out_date}
+                                          onChange={async e => {
+                                            const co = e.target.value;
+                                            setEditForm(f => ({ ...f, check_out_date: co }));
+                                            setEditAvail(null);
+                                            if (editForm.check_in_date && co && editForm.category) {
+                                              const res = await fetch(`${API}/api/bookings/${b.id}/available-rooms-for-edit?category=${encodeURIComponent(editForm.category)}&check_in=${editForm.check_in_date}&check_out=${co}`);
+                                              if (res.ok) setEditAvail(await res.json());
+                                            }
+                                          }}
+                                          className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Total ($)</label>
+                                        <input type="number" min="0" step="1" value={editForm.total_price}
+                                          onChange={e => setEditForm(f => ({ ...f, total_price: e.target.value }))}
+                                          className="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ocean/40"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {editAvail !== null && (
+                                      <div className={`flex items-center gap-2 text-sm font-semibold ${editAvail.count > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                        <span>{editAvail.count > 0 ? `✓ ${editAvail.count} room${editAvail.count !== 1 ? 's' : ''} available` : '✗ No rooms available for these dates'}</span>
+                                        {editAvail.rooms.length > 0 && <span className="text-xs text-slate-400 font-normal">— Rooms: {editAvail.rooms.join(', ')}</span>}
+                                      </div>
+                                    )}
+
+                                    {editMsg && <p className="text-sm text-green-600 font-semibold">{editMsg}</p>}
+
+                                    <button
+                                      disabled={editSaving}
+                                      onClick={async () => {
+                                        setEditSaving(true); setEditMsg('');
+                                        try {
+                                          const res = await fetch(`${API}/api/bookings/${b.id}`, {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                              category: editForm.category,
+                                              check_in_date: editForm.check_in_date,
+                                              check_out_date: editForm.check_out_date,
+                                              total_price: editForm.total_price ? parseFloat(editForm.total_price) : null,
+                                            }),
+                                          });
+                                          if (res.ok) {
+                                            setEditMsg('Saved! Guest notified by email.');
+                                            setEditingId(null);
+                                            fetchData();
+                                          } else {
+                                            const d = await res.json();
+                                            setEditMsg(d.error || 'Save failed.');
+                                          }
+                                        } catch { setEditMsg('Error saving changes.'); }
+                                        finally { setEditSaving(false); }
+                                      }}
+                                      className="btn-primary py-2 px-5 text-sm disabled:opacity-50"
+                                    >
+                                      {editSaving ? 'Saving…' : 'Save & Notify Guest'}
                                     </button>
                                   </div>
                                 )}

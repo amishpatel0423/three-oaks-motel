@@ -106,6 +106,18 @@ def setup_db():
     cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancel_token TEXT")
 
     cur.execute("""
+        CREATE TABLE IF NOT EXISTS booking_change_requests (
+            id                  SERIAL PRIMARY KEY,
+            booking_id          INTEGER NOT NULL,
+            requested_category  TEXT,
+            requested_check_in  TEXT,
+            requested_check_out TEXT,
+            status              TEXT NOT NULL DEFAULT 'Pending',
+            created_at          TEXT
+        )
+    """)
+
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS reviews_cache (
             id          SERIAL PRIMARY KEY,
             author_name TEXT,
@@ -407,11 +419,11 @@ def _get_email_template(key: str, vars: dict) -> str:
 def _cancel_link_html(cancel_token: str) -> str:
     if not cancel_token:
         return ""
-    url = f"{SITE_URL}/cancel?token={cancel_token}"
+    url = f"{SITE_URL}/#/manage?token={cancel_token}"
     return f"""
           <div style="text-align:center;margin-bottom:20px;">
             <a href="{url}" style="display:inline-block;background:#f8fafc;color:#64748b;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:13px;border:1px solid #e2e8f0;">
-              Need to cancel? Click here → <span style="color:#dc2626;font-weight:600;">Cancel Reservation</span>
+              Manage your reservation → <span style="color:#006994;font-weight:600;">Cancel or Request Changes</span>
             </a>
             <p style="margin:6px 0 0;color:#94a3b8;font-size:11px;">Cancellation is only available more than 24 hours before check-in.</p>
           </div>"""
@@ -1024,6 +1036,379 @@ def do_cancel(token):
     cur.close(); con.close()
     threading.Thread(target=send_cancellation_emails, args=(dict(b),), daemon=True).start()
     return jsonify({"message": "Reservation cancelled successfully."})
+
+
+# ── Guest manage (cancel or change request) ───────────────────────────────────
+
+def _booking_payload(b):
+    return {
+        "reference_number": b["reference_number"],
+        "guest_name":       b["guest_name"],
+        "email":            b["email"],
+        "category":         b["category"],
+        "check_in_date":    b["check_in_date"],
+        "check_out_date":   b["check_out_date"],
+        "total_price":      b["total_price"],
+        "status":           b["status"],
+        "can_cancel":       _can_cancel(b["check_in_date"]),
+        "cancel_token":     b["cancel_token"],
+    }
+
+
+@app.get("/api/bookings/manage/<token>")
+def get_manage_info(token):
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM bookings WHERE cancel_token=%s", (token,))
+    b = cur.fetchone()
+    cur.close(); con.close()
+    if not b:
+        return jsonify({"error": "Invalid or expired link."}), 404
+    if b["status"] in ("Cancelled", "Rejected"):
+        return jsonify({"error": f"This reservation has status '{b['status']}' and cannot be managed."}), 409
+    return jsonify(_booking_payload(b))
+
+
+@app.post("/api/bookings/manage/<token>/cancel")
+def manage_cancel(token):
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM bookings WHERE cancel_token=%s", (token,))
+    b = cur.fetchone()
+    if not b:
+        cur.close(); con.close()
+        return jsonify({"error": "Invalid or expired link."}), 404
+    if b["status"] not in ("Pending", "Approved"):
+        cur.close(); con.close()
+        return jsonify({"error": f"Cannot cancel a reservation with status '{b['status']}'."}), 409
+    if not _can_cancel(b["check_in_date"]):
+        cur.close(); con.close()
+        return jsonify({"error": "Cancellation window has passed (within 24 hours of check-in). Please call (321) 267-6272."}), 400
+    cur.execute("UPDATE bookings SET status='Cancelled' WHERE id=%s", (b["id"],))
+    con.commit()
+    cur.close(); con.close()
+    threading.Thread(target=send_cancellation_emails, args=(dict(b),), daemon=True).start()
+    return jsonify({"message": "Reservation cancelled successfully."})
+
+
+@app.post("/api/bookings/manage/<token>/change")
+def manage_change_request(token):
+    data = request.get_json(silent=True) or {}
+    con  = get_con()
+    cur  = con.cursor()
+    cur.execute("SELECT * FROM bookings WHERE cancel_token=%s", (token,))
+    b = cur.fetchone()
+    if not b:
+        cur.close(); con.close()
+        return jsonify({"error": "Invalid or expired link."}), 404
+    if b["status"] in ("Cancelled", "Rejected"):
+        cur.close(); con.close()
+        return jsonify({"error": "Cannot request changes for this reservation."}), 409
+    cur.execute("""
+        INSERT INTO booking_change_requests
+            (booking_id, requested_category, requested_check_in, requested_check_out, status, created_at)
+        VALUES (%s,%s,%s,%s,'Pending',%s)
+        RETURNING id
+    """, (
+        b["id"],
+        data.get("category") or b["category"],
+        data.get("check_in_date") or b["check_in_date"],
+        data.get("check_out_date") or b["check_out_date"],
+        datetime.now().isoformat(timespec="seconds"),
+    ))
+    con.commit()
+    cur.close(); con.close()
+    threading.Thread(target=send_change_request_email, args=(dict(b), data), daemon=True).start()
+    return jsonify({"message": "Change request submitted."})
+
+
+# ── Admin booking edit ────────────────────────────────────────────────────────
+
+@app.patch("/api/bookings/<int:bid>")
+def edit_booking(bid):
+    data = request.get_json(silent=True) or {}
+    con  = get_con()
+    cur  = con.cursor()
+    cur.execute("SELECT * FROM bookings WHERE id=%s", (bid,))
+    b = cur.fetchone()
+    if not b:
+        cur.close(); con.close()
+        return jsonify({"error": "Not found"}), 404
+
+    new_cat = data.get("category", b["category"])
+    new_ci  = data.get("check_in_date", b["check_in_date"])
+    new_co  = data.get("check_out_date", b["check_out_date"])
+    new_tot = data.get("total_price", b["total_price"])
+
+    # If category or dates changed, clear the room assignment
+    changed = (new_cat != b["category"] or new_ci != b["check_in_date"] or new_co != b["check_out_date"])
+    assigned_room_id = None if changed else b["assigned_room_id"]
+
+    cur.execute("""
+        UPDATE bookings
+        SET category=%s, check_in_date=%s, check_out_date=%s, total_price=%s, assigned_room_id=%s
+        WHERE id=%s
+    """, (new_cat, new_ci, new_co, new_tot, assigned_room_id, bid))
+    con.commit()
+
+    cur.execute("SELECT * FROM bookings WHERE id=%s", (bid,))
+    updated = dict(cur.fetchone())
+    cur.close(); con.close()
+
+    threading.Thread(target=send_modification_email, args=(updated,), daemon=True).start()
+    return jsonify({"message": "Booking updated.", "booking": updated})
+
+
+@app.get("/api/bookings/<int:bid>/available-rooms-for-edit")
+def available_rooms_for_edit(bid):
+    category   = request.args.get("category")
+    check_in   = request.args.get("check_in")
+    check_out  = request.args.get("check_out")
+    if not category or not check_in or not check_out:
+        return jsonify({"error": "category, check_in, check_out required"}), 400
+    rooms = available_rooms(category, check_in, check_out)
+    return jsonify({"count": len(rooms), "rooms": [r["room_number"] for r in rooms]})
+
+
+# ── Admin change request management ──────────────────────────────────────────
+
+@app.get("/api/admin/booking-changes")
+def list_booking_changes():
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("""
+        SELECT cr.*, b.reference_number, b.guest_name, b.email,
+               b.category, b.check_in_date, b.check_out_date, b.total_price, b.cancel_token
+        FROM booking_change_requests cr
+        JOIN bookings b ON cr.booking_id = b.id
+        WHERE cr.status = 'Pending'
+        ORDER BY cr.created_at DESC
+    """)
+    rows = cur.fetchall()
+    cur.close(); con.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.post("/api/admin/booking-changes/<int:cid>/approve")
+def approve_change(cid):
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("""
+        SELECT cr.*, b.email, b.guest_name, b.reference_number, b.cancel_token, b.total_price
+        FROM booking_change_requests cr
+        JOIN bookings b ON cr.booking_id = b.id
+        WHERE cr.id=%s
+    """, (cid,))
+    cr = cur.fetchone()
+    if not cr:
+        cur.close(); con.close()
+        return jsonify({"error": "Not found"}), 404
+
+    cur.execute("""
+        UPDATE bookings
+        SET category=%s, check_in_date=%s, check_out_date=%s, assigned_room_id=NULL
+        WHERE id=%s
+    """, (cr["requested_category"], cr["requested_check_in"], cr["requested_check_out"], cr["booking_id"]))
+    cur.execute("UPDATE booking_change_requests SET status='Approved' WHERE id=%s", (cid,))
+    con.commit()
+
+    cur.execute("SELECT * FROM bookings WHERE id=%s", (cr["booking_id"],))
+    updated = dict(cur.fetchone())
+    cur.close(); con.close()
+
+    threading.Thread(target=send_change_approved_email, args=(updated,), daemon=True).start()
+    return jsonify({"message": "Change approved and booking updated."})
+
+
+@app.post("/api/admin/booking-changes/<int:cid>/deny")
+def deny_change(cid):
+    con = get_con()
+    cur = con.cursor()
+    cur.execute("""
+        SELECT cr.*, b.email, b.guest_name, b.reference_number, b.category,
+               b.check_in_date, b.check_out_date, b.cancel_token, b.total_price
+        FROM booking_change_requests cr
+        JOIN bookings b ON cr.booking_id = b.id
+        WHERE cr.id=%s
+    """, (cid,))
+    cr = cur.fetchone()
+    if not cr:
+        cur.close(); con.close()
+        return jsonify({"error": "Not found"}), 404
+
+    cur.execute("UPDATE booking_change_requests SET status='Denied' WHERE id=%s", (cid,))
+    con.commit()
+    cur.close(); con.close()
+
+    threading.Thread(target=send_change_denied_email, args=(dict(cr),), daemon=True).start()
+    return jsonify({"message": "Change request denied."})
+
+
+# ── New email functions ───────────────────────────────────────────────────────
+
+def send_modification_email(b: dict):
+    ref  = b.get("reference_number", "")
+    name = b.get("guest_name", "")
+    ci   = fmt_date(b["check_in_date"])
+    co   = fmt_date(b["check_out_date"])
+    cat  = b["category"]
+    tot  = f"${b['total_price']:.2f}" if b.get("total_price") is not None else "TBD"
+    manage_url = f"{SITE_URL}/#/manage?token={b.get('cancel_token','')}"
+    html = f"""
+<!DOCTYPE html><html>
+<body style="margin:0;padding:0;background:#f0f8ff;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f8ff;padding:32px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <tr><td style="background:#7c3aed;padding:32px 40px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">Reservation Updated</h1>
+          <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">Three Oaks Motel · Ref: {ref}</p>
+        </td></tr>
+        <tr><td style="padding:40px 40px 32px;">
+          <h2 style="margin:0 0 16px;color:#0f172a;font-size:22px;">Hi {name},</h2>
+          <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">Your reservation has been updated by our team. Here are your new details:</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:12px;margin-bottom:24px;">
+            <tr><td style="padding:14px 20px;border-bottom:1px solid #e2e8f0;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Room</span><br>
+              <span style="color:#0f172a;font-size:15px;font-weight:600;">{cat}</span>
+            </td></tr>
+            <tr><td style="padding:14px 20px;border-bottom:1px solid #e2e8f0;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Check-in</span><br>
+              <span style="color:#0f172a;font-size:15px;font-weight:600;">{ci} <span style="color:#64748b;font-weight:400;">from 2:00 PM</span></span>
+            </td></tr>
+            <tr><td style="padding:14px 20px;border-bottom:1px solid #e2e8f0;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Check-out</span><br>
+              <span style="color:#0f172a;font-size:15px;font-weight:600;">{co} <span style="color:#64748b;font-weight:400;">by 11:00 AM</span></span>
+            </td></tr>
+            <tr><td style="padding:14px 20px;">
+              <span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Total</span><br>
+              <span style="color:#7c3aed;font-size:18px;font-weight:800;">{tot}</span>
+            </td></tr>
+          </table>
+          <p style="margin:0 0 20px;color:#64748b;font-size:13px;">Questions? Call us at <a href="tel:3212676272" style="color:#006994;">(321) 267-6272</a>.</p>
+          <div style="text-align:center;">
+            <a href="{manage_url}" style="display:inline-block;background:#f8fafc;color:#64748b;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:13px;border:1px solid #e2e8f0;">Manage your reservation →</a>
+          </div>
+        </td></tr>
+        <tr><td style="background:#f8fafc;padding:16px 40px;text-align:center;border-top:1px solid #e2e8f0;">
+          <p style="margin:0;color:#94a3b8;font-size:12px;">© {datetime.now().year} Three Oaks Motel</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>"""
+    send_email(b["email"], f"Reservation Updated — Three Oaks Motel | Ref: {ref}", html)
+
+
+def send_change_request_email(b: dict, req: dict):
+    ref      = b.get("reference_number", "")
+    name     = b.get("guest_name", "")
+    new_cat  = req.get("category") or b["category"]
+    new_ci   = fmt_date(req.get("check_in_date") or b["check_in_date"])
+    new_co   = fmt_date(req.get("check_out_date") or b["check_out_date"])
+    html = f"""
+<!DOCTYPE html><html>
+<body style="margin:0;padding:0;background:#f0f8ff;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f8ff;padding:32px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <tr><td style="background:#0f172a;padding:24px 32px;">
+          <h2 style="margin:0;color:#ffffff;font-size:18px;font-weight:700;">Guest Change Request — {ref}</h2>
+        </td></tr>
+        <tr><td style="padding:28px 32px;">
+          <p style="margin:0 0 12px;color:#475569;"><strong>{name}</strong> has requested changes to their reservation.</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+            <tr>
+              <th style="text-align:left;padding:8px 0;color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #f1f5f9;width:33%">Field</th>
+              <th style="text-align:left;padding:8px 0;color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #f1f5f9;">Current</th>
+              <th style="text-align:left;padding:8px 0;color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #f1f5f9;">Requested</th>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#475569;font-size:13px;border-bottom:1px solid #f1f5f9;">Room</td>
+              <td style="padding:8px 0;color:#475569;font-size:13px;border-bottom:1px solid #f1f5f9;">{b['category']}</td>
+              <td style="padding:8px 0;font-size:13px;font-weight:600;border-bottom:1px solid #f1f5f9;color:{'#7c3aed' if new_cat != b['category'] else '#475569'};">{new_cat}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#475569;font-size:13px;border-bottom:1px solid #f1f5f9;">Check-in</td>
+              <td style="padding:8px 0;color:#475569;font-size:13px;border-bottom:1px solid #f1f5f9;">{fmt_date(b['check_in_date'])}</td>
+              <td style="padding:8px 0;font-size:13px;font-weight:600;border-bottom:1px solid #f1f5f9;color:{'#7c3aed' if (req.get('check_in_date') or b['check_in_date']) != b['check_in_date'] else '#475569'};">{new_ci}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#475569;font-size:13px;">Check-out</td>
+              <td style="padding:8px 0;color:#475569;font-size:13px;">{fmt_date(b['check_out_date'])}</td>
+              <td style="padding:8px 0;font-size:13px;font-weight:600;color:{'#7c3aed' if (req.get('check_out_date') or b['check_out_date']) != b['check_out_date'] else '#475569'};">{new_co}</td>
+            </tr>
+          </table>
+          <a href="{SITE_URL}/#/admin" style="display:inline-block;background:#006994;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:700;">Review in Admin Dashboard →</a>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>"""
+    send_email(ADMIN_EMAIL, f"Guest Change Request — {ref}", html)
+
+
+def send_change_approved_email(b: dict):
+    ref  = b.get("reference_number", "")
+    ci   = fmt_date(b["check_in_date"])
+    co   = fmt_date(b["check_out_date"])
+    cat  = b["category"]
+    tot  = f"${b['total_price']:.2f}" if b.get("total_price") is not None else "TBD"
+    html = f"""
+<!DOCTYPE html><html>
+<body style="margin:0;padding:0;background:#f0f8ff;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f8ff;padding:32px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <tr><td style="background:#16a34a;padding:32px 40px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">Changes Approved!</h1>
+          <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">Three Oaks Motel · Ref: {ref}</p>
+        </td></tr>
+        <tr><td style="padding:40px;">
+          <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.6;">Great news — your requested changes have been approved. Here are your updated reservation details:</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:12px;margin-bottom:24px;">
+            <tr><td style="padding:14px 20px;border-bottom:1px solid #e2e8f0;"><span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Room</span><br><span style="color:#0f172a;font-size:15px;font-weight:600;">{cat}</span></td></tr>
+            <tr><td style="padding:14px 20px;border-bottom:1px solid #e2e8f0;"><span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Check-in</span><br><span style="color:#0f172a;font-size:15px;font-weight:600;">{ci} from 2:00 PM</span></td></tr>
+            <tr><td style="padding:14px 20px;border-bottom:1px solid #e2e8f0;"><span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Check-out</span><br><span style="color:#0f172a;font-size:15px;font-weight:600;">{co} by 11:00 AM</span></td></tr>
+            <tr><td style="padding:14px 20px;"><span style="color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase;">Total</span><br><span style="color:#16a34a;font-size:18px;font-weight:800;">{tot}</span></td></tr>
+          </table>
+          <p style="margin:0;color:#64748b;font-size:13px;">Questions? Call <a href="tel:3212676272" style="color:#006994;">(321) 267-6272</a>.</p>
+        </td></tr>
+        <tr><td style="background:#f8fafc;padding:16px 40px;text-align:center;border-top:1px solid #e2e8f0;"><p style="margin:0;color:#94a3b8;font-size:12px;">© {datetime.now().year} Three Oaks Motel</p></td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>"""
+    send_email(b["email"], f"Changes Approved — Three Oaks Motel | Ref: {ref}", html)
+
+
+def send_change_denied_email(cr: dict):
+    ref  = cr.get("reference_number", "")
+    name = cr.get("guest_name", "")
+    html = f"""
+<!DOCTYPE html><html>
+<body style="margin:0;padding:0;background:#f0f8ff;font-family:Inter,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f8ff;padding:32px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <tr><td style="background:#006994;padding:32px 40px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">Three Oaks Motel</h1>
+          <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">Change Request Update · Ref: {ref}</p>
+        </td></tr>
+        <tr><td style="padding:40px;">
+          <h2 style="margin:0 0 16px;color:#0f172a;font-size:22px;">Hi {name},</h2>
+          <p style="margin:0 0 20px;color:#475569;font-size:15px;line-height:1.6;">Unfortunately we were unable to accommodate your requested changes at this time. Your original reservation remains unchanged.</p>
+          <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">Please call us directly and we'll do our best to help find a solution.</p>
+          <div style="text-align:center;">
+            <a href="tel:3212676272" style="display:inline-block;background:#006994;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;">Call (321) 267-6272</a>
+          </div>
+        </td></tr>
+        <tr><td style="background:#f8fafc;padding:16px 40px;text-align:center;border-top:1px solid #e2e8f0;"><p style="margin:0;color:#94a3b8;font-size:12px;">© {datetime.now().year} Three Oaks Motel</p></td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>"""
+    send_email(cr["email"], f"Change Request Update — Three Oaks Motel | Ref: {ref}", html)
 
 
 @app.get("/api/admin/pricing")
